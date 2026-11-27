@@ -382,7 +382,7 @@ a.post('/admin/ai/logo', async (c) => {
 });
 
 /* Design from inspiration: several websites, images and PDFs in, three theme options out */
-const THEME_FONTS = ['Bricolage Grotesque', 'Schibsted Grotesk', 'Syne', 'Unbounded', 'Space Grotesk', 'Hanken Grotesk', 'Figtree', 'Manrope', 'Geist', 'Inter Tight', 'DM Sans', 'Instrument Sans', 'Newsreader', 'Literata', 'Fraunces', 'Martian Mono', 'DM Mono', 'Space Mono', 'IBM Plex Mono', 'JetBrains Mono'];
+const THEME_FONTS = ['Bricolage Grotesque', 'Schibsted Grotesk', 'Syne', 'Unbounded', 'Space Grotesk', 'Hanken Grotesk', 'Figtree', 'Manrope', 'Geist', 'Inter Tight', 'DM Sans', 'Instrument Sans', 'Montserrat', 'Newsreader', 'Literata', 'Fraunces', 'Martian Mono', 'DM Mono', 'Space Mono', 'IBM Plex Mono', 'JetBrains Mono'];
 a.post('/admin/ai/theme', async (c) => {
   need(c, 'design.manage');
   const b = await c.req.json<{ urls?: string[]; files?: string[]; notes?: string; provider?: any }>().catch(() => ({} as any));

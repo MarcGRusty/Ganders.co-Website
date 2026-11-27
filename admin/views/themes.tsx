@@ -2,7 +2,7 @@ import { h } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { Btn, Card, ColorField, ConfirmBtn, Field, Select, Toggle, toast } from '../ui';
 
-export const FONTS = ['Bricolage Grotesque', 'Schibsted Grotesk', 'Syne', 'Unbounded', 'Space Grotesk', 'Hanken Grotesk', 'Figtree', 'Manrope', 'Geist', 'Inter Tight', 'DM Sans', 'Instrument Sans', 'Newsreader', 'Literata', 'Fraunces', 'Martian Mono', 'DM Mono', 'Space Mono', 'IBM Plex Mono', 'JetBrains Mono'];
+export const FONTS = ['Bricolage Grotesque', 'Schibsted Grotesk', 'Syne', 'Unbounded', 'Space Grotesk', 'Hanken Grotesk', 'Figtree', 'Manrope', 'Geist', 'Inter Tight', 'DM Sans', 'Instrument Sans', 'Montserrat', 'Newsreader', 'Literata', 'Fraunces', 'Martian Mono', 'DM Mono', 'Space Mono', 'IBM Plex Mono', 'JetBrains Mono'];
 const KEYS: [string, string][] = [['paper', 'Background'], ['ink', 'Text'], ['muted', 'Soft text'], ['accent', 'Highlight'], ['onAccent', 'Text on highlight'], ['line', 'Lines']];
 
 type Pal = Record<string, string>;
