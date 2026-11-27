@@ -358,3 +358,22 @@ details.more summary{cursor:pointer;font-weight:600;font-size:.9rem;padding:6px 
 .card.focus{box-shadow:0 0 0 3px var(--accent)}
 @media (min-width:640px){.seg{grid-template-columns:repeat(3,1fr)}.tgrid{grid-template-columns:repeat(2,1fr)}.palettes{grid-template-columns:1fr 1fr}}
 @media (min-width:1000px){.tgrid{grid-template-columns:repeat(3,1fr)}.tbuild{grid-template-columns:280px 1fr;align-items:start}.tpreview{grid-template-columns:1fr;position:sticky;top:80px}}
+
+/* Focal point picker */
+.focal-img{position:relative;cursor:crosshair;border-radius:10px;overflow:hidden;line-height:0}
+.focal-img img{width:100%;height:auto;display:block}
+.focal-dot{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 2px rgba(0,0,0,.45),inset 0 0 0 2px rgba(0,0,0,.25);pointer-events:none}
+.focal-previews{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
+.focal-previews figure{margin:0}
+.focal-previews img{width:100%;object-fit:cover;border-radius:8px;display:block}
+.focal-previews figcaption{font-size:12px;opacity:.7;margin-top:4px}
+
+/* Inspiration */
+.chips{list-style:none;padding:0;margin:12px 0 0;display:flex;flex-wrap:wrap;gap:8px}
+.chips li{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:4px 6px 4px 12px;font-size:14px;max-width:100%}
+.chips a{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:inherit}
+.chips button,.media-item .x{border:0;background:none;cursor:pointer;font-size:18px;line-height:1;padding:2px 6px;color:inherit}
+.media-item.insp{position:relative}
+.media-item .x{position:absolute;top:4px;right:4px;font-size:14px;padding:1px 6px;background:rgba(0,0,0,.6);color:#fff;border-radius:999px}
+.tcard .tsample{display:flex;flex-direction:column;gap:8px;padding:16px;border:1px solid rgba(0,0,0,.08);margin-bottom:8px}
+.tswatch{display:flex;gap:4px;align-items:center}.tswatch i{width:18px;height:18px;border-radius:50%;border:1px solid rgba(0,0,0,.15)}.tswatch em{font-size:11px;opacity:.6;margin:0 2px 0 6px}

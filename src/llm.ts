@@ -19,6 +19,7 @@ const TASK_PREFERENCE: Record<string, ProviderId[]> = {
   social: ['xai', 'openai', 'anthropic', 'gemini', 'openrouter'],
   code: ['anthropic', 'openai', 'gemini', 'xai', 'openrouter'],
   design: ['anthropic', 'openai', 'gemini', 'xai', 'openrouter'],
+  vision: ['anthropic', 'gemini', 'openai', 'openrouter', 'xai'],
 };
 
 export const HOUSE_RULES = [
@@ -34,7 +35,10 @@ export interface LlmRequest {
   provider?: ProviderId | 'auto';
   maxTokens?: number;
   json?: boolean;
+  /** Images (png, jpeg, gif, webp) and PDFs to look at, base64 encoded */
+  attachments?: Attachment[];
 }
+export interface Attachment { type: string; data: string; name?: string }
 export interface LlmResult { text: string; provider: ProviderId; model: string; ms: number }
 
 export function availableProviders(env: Env): ProviderId[] {
@@ -54,13 +58,19 @@ function pickOrder(env: Env, s: SiteSettings, req: LlmRequest): ProviderId[] {
   return order;
 }
 
-async function callProvider(env: Env, p: ProviderId, model: string, system: string, prompt: string, maxTokens: number, temperature: number, json: boolean): Promise<string> {
+async function callProvider(env: Env, p: ProviderId, model: string, system: string, prompt: string, maxTokens: number, temperature: number, json: boolean, files: Attachment[] = []): Promise<string> {
   const key = String(env[PROVIDERS[p].secret]);
+  const imgs = files.filter((f) => f.type.startsWith('image/'));
+  const pdfs = files.filter((f) => f.type === 'application/pdf');
   if (p === 'anthropic') {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-      body: JSON.stringify({ model, max_tokens: maxTokens, system, messages: [{ role: 'user', content: prompt }] }),
+      body: JSON.stringify({ model, max_tokens: maxTokens, system, messages: [{ role: 'user', content: files.length ? [
+        ...imgs.map((f) => ({ type: 'image', source: { type: 'base64', media_type: f.type, data: f.data } })),
+        ...pdfs.map((f) => ({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: f.data } })),
+        { type: 'text', text: prompt },
+      ] : prompt }] }),
     });
     const d: any = await r.json();
     if (!r.ok) throw new Error(d?.error?.message || `Anthropic error ${r.status}`);
@@ -72,7 +82,7 @@ async function callProvider(env: Env, p: ProviderId, model: string, system: stri
       headers: { 'content-type': 'application/json', 'x-goog-api-key': key },
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: system }] },
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        contents: [{ role: 'user', parts: [...files.map((f) => ({ inlineData: { mimeType: f.type, data: f.data } })), { text: prompt }] }],
         generationConfig: { maxOutputTokens: maxTokens, temperature, ...(json ? { responseMimeType: 'application/json' } : {}) },
       }),
     });
@@ -87,7 +97,11 @@ async function callProvider(env: Env, p: ProviderId, model: string, system: stri
     headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
     body: JSON.stringify({
       model,
-      messages: [{ role: 'system', content: system }, { role: 'user', content: prompt }],
+      messages: [{ role: 'system', content: system }, { role: 'user', content: files.length ? [
+        ...imgs.map((f) => ({ type: 'image_url', image_url: { url: `data:${f.type};base64,${f.data}` } })),
+        ...(p === 'xai' ? [] : pdfs.map((f) => ({ type: 'file', file: { filename: f.name || 'file.pdf', file_data: `data:application/pdf;base64,${f.data}` } }))),
+        { type: 'text', text: prompt },
+      ] : prompt }],
       max_completion_tokens: maxTokens,
       ...(json && p !== 'openrouter' ? { response_format: { type: 'json_object' } } : {}),
     }),
@@ -105,7 +119,7 @@ export async function generate(env: Env, s: SiteSettings, req: LlmRequest): Prom
     const model = s.ai.models[p] || '';
     const t0 = Date.now();
     try {
-      const text = await callProvider(env, p, model, system, req.prompt, req.maxTokens ?? 2000, s.ai.temperature, !!req.json);
+      const text = await callProvider(env, p, model, system, req.prompt, req.maxTokens ?? 2000, s.ai.temperature, !!req.json, req.attachments);
       const ms = Date.now() - t0;
       await env.DB.prepare('INSERT INTO ai_log (task, provider, model, ok, ms) VALUES (?, ?, ?, 1, ?)').bind(req.task, p, model, ms).run();
       return { text: noEmDash(text), provider: p, model, ms };

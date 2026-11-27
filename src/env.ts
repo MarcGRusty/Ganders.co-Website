@@ -6,6 +6,8 @@ export interface Env {
   STUDIO_URL?: string;
   ADMIN_PASSWORD?: string;
   SESSION_SECRET?: string;
+  /** Workers AI, used to find faces and subjects in photos */
+  AI?: Ai;
   ANTHROPIC_API_KEY?: string;
   OPENAI_API_KEY?: string;
   OPENAI_BASE_URL?: string; // optional: any OpenAI compatible endpoint (Azure, Groq, Together, a local model)

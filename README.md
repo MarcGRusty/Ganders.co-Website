@@ -29,6 +29,12 @@ Email goes through [Resend](https://resend.com). Add your domain there, set the 
 
 Email is sent from `NoReply@ganders.co` by default. Change the sender name, address and reply-to address in Studio under Design, Email, where you can also send a test and see recent sends.
 
+## Photos and design inspiration
+
+Uploaded photos get a focal point so every crop (square, portrait, wide) stays on the face or main subject. Chrome on Android and Mac finds faces on the device; otherwise Cloudflare Workers AI looks for a person or subject. In Media, tap any photo to move the focus by hand or reset it.
+
+Design, Inspiration takes several websites plus images, screenshots and PDFs, and asks AI for three theme options built from them. Image and PDF references need Claude, Gemini or ChatGPT connected.
+
 ## Live deploys from GitHub
 
 `.github/workflows/deploy.yml` deploys on every push to `main` (and the current build branch). It creates the D1 database and R2 bucket on the first run, applies migrations, deploys, and copies any of these GitHub secrets to the Worker: `ADMIN_PASSWORD`, `SESSION_SECRET`, `OWNER_EMAIL`, `RESEND_API_KEY`, the AI keys, and the Meta keys.

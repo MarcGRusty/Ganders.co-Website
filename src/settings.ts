@@ -67,6 +67,11 @@ export interface SiteSettings {
     showEmail: boolean;
     notes: string[];
   };
+  inspiration: {
+    urls: string[];
+    files: { key: string; name: string; type: string }[];
+    notes: string;
+  };
   mail: {
     fromName: string;
     fromAddress: string;
@@ -137,6 +142,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     showEmail: true,
     notes: ['I reply to most messages within two working days.', 'For customer support, the fastest route is through the business itself. Find them all on the Ventures page.'],
   },
+  inspiration: { urls: [], files: [], notes: '' },
   mail: {
     fromName: '',
     fromAddress: 'NoReply@ganders.co',

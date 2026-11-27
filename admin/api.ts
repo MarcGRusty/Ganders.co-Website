@@ -27,7 +27,44 @@ export async function upload(file: File, alt = ''): Promise<{ key: string; url: 
   const f = new FormData();
   f.append('file', file);
   f.append('alt', alt);
+  if (file.type.startsWith('image/') && !file.type.includes('svg')) {
+    const info = await faceFocus(file).catch(() => null);
+    if (info) {
+      f.append('w', String(info.w));
+      f.append('h', String(info.h));
+      if (info.fx !== undefined) { f.append('fx', String(info.fx)); f.append('fy', String(info.fy)); f.append('fsource', 'auto-face'); }
+    }
+  }
   return api('/admin/media', { form: f });
+}
+
+/**
+ * Reads the photo size and, where the browser can (Chrome on Android and Mac),
+ * finds faces on the device. The server falls back to Cloudflare AI otherwise.
+ */
+async function faceFocus(file: File): Promise<{ w: number; h: number; fx?: number; fy?: number }> {
+  const bmp = await createImageBitmap(file);
+  const out: { w: number; h: number; fx?: number; fy?: number } = { w: bmp.width, h: bmp.height };
+  const FD = (window as any).FaceDetector;
+  if (FD) {
+    try {
+      const faces: any[] = await new FD({ fastMode: false, maxDetectedFaces: 10 }).detect(bmp);
+      if (faces.length) {
+        const area = (f: any) => f.boundingBox.width * f.boundingBox.height;
+        faces.sort((a, b) => area(b) - area(a));
+        const group = faces.filter((f) => area(f) > area(faces[0]) * 0.35);
+        out.fx = group.reduce((s, f) => s + f.boundingBox.x + f.boundingBox.width / 2, 0) / group.length / bmp.width;
+        out.fy = group.reduce((s, f) => s + f.boundingBox.y + f.boundingBox.height / 2, 0) / group.length / bmp.height;
+      }
+    } catch { /* not supported on this device */ }
+  }
+  bmp.close();
+  return out;
+}
+
+/** CSS object-position for a media row's focal point. */
+export function focalPos(m: { focal_x?: number | null; focal_y?: number | null } | null | undefined): string | undefined {
+  return m && m.focal_x != null && m.focal_y != null ? `${(m.focal_x * 100).toFixed(1)}% ${(m.focal_y * 100).toFixed(1)}%` : undefined;
 }
 
 export function mediaUrl(v: string) {

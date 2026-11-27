@@ -1,6 +1,6 @@
 import { h } from 'preact';
 import { useState } from 'preact/hooks';
-import { api, adm, mediaUrl, upload } from '../api';
+import { api, adm, mediaUrl, upload, focalPos } from '../api';
 import { ThemesTab, FONTS as THEME_FONTS } from './themes';
 import { Area, Btn, Card, ColorField, ConfirmBtn, Empty, Field, Head, ImageField, ProviderPicker, Select, Sheet, Spinner, Toggle, toast, useLoad, Pending, fmt } from '../ui';
 
@@ -91,12 +91,12 @@ export function Design() {
   async function save() {
     setBusy(true);
     try {
-      const r = await api('/admin/settings', { method: 'PUT', body: { site: s.site, theme: s.theme, themes: s.themes, home: s.home, contact: s.contact, mail: s.mail, nav: s.nav, social: s.social, seo: s.seo } });
+      const r = await api('/admin/settings', { method: 'PUT', body: { site: s.site, theme: s.theme, themes: s.themes, home: s.home, contact: s.contact, mail: s.mail, inspiration: s.inspiration, nav: s.nav, social: s.social, seo: s.seo } });
       setData({ ...data, settings: r.settings });
       toast.ok('Saved. Changes are live.');
     } catch (e) { toast.err(e); } finally { setBusy(false); }
   }
-  const tabs: [string, string][] = [['identity', 'Identity'], ['theme', 'Themes and dark mode'], ['home', 'Home page'], ['contact', 'Contact page'], ['email', 'Email'], ['menu', 'Menu and links'], ['seo', 'Search']];
+  const tabs: [string, string][] = [['identity', 'Identity'], ['inspiration', 'Inspiration'], ['theme', 'Themes and dark mode'], ['home', 'Home page'], ['contact', 'Contact page'], ['email', 'Email'], ['menu', 'Menu and links'], ['seo', 'Search']];
   return (
     <div class="view">
       <Head title="Design" sub="Everything visitors see. Save, then refresh the site to check it.">
@@ -195,6 +195,12 @@ export function Design() {
 
       {tab === 'email' && <EmailTab s={s} upd={upd} />}
 
+      {tab === 'inspiration' && (
+        <InspirationTab s={s} setInsp={(v) => setGroup('inspiration', v)}
+          addThemes={(list) => setData({ ...data, settings: { ...s, themes: [...(s.themes || []), ...list] } })}
+          useTheme={(th) => { setData({ ...data, settings: { ...s, themes: (s.themes || []).some((x: any) => x.id === th.id) ? s.themes : [...(s.themes || []), th], theme: { ...s.theme, preset: th.id, fontDisplay: th.fontDisplay, fontBody: th.fontBody, fontMono: th.fontMono, radius: th.radius, light: { ...th.light }, dark: { ...th.dark } } } }); toast.ok(`${th.name} applied. Save changes to make it live.`); }} />
+      )}
+
       {tab === 'menu' && (
         <div class="grid2">
           <Card title="Main menu">
@@ -285,18 +291,148 @@ export function Media() {
         <div class="media-grid big">
           {data.map((m) => (
             <button class="media-item" onClick={() => setSel(m)}>
-              {m.type.startsWith('image/') ? <img src={mediaUrl(m.key)} alt={m.alt || m.name} loading="lazy" /> : <span class="file mono">{m.name}</span>}
+              {m.type.startsWith('image/') ? <img src={mediaUrl(m.key)} alt={m.alt || m.name} loading="lazy" style={focalPos(m) ? { objectPosition: focalPos(m) } : undefined} /> : <span class="file mono">{m.name}</span>}
             </button>
           ))}
         </div>
       ) : <Empty title="No media yet">Upload photos, logos, and documents here.</Empty>}
       {sel && (
         <Sheet title={sel.name} onClose={() => setSel(null)}>
-          {sel.type.startsWith('image/') && <img class="media-big" src={mediaUrl(sel.key)} alt="" />}
+          {sel.type.startsWith('image/') && !sel.type.includes('svg') ? <FocalPicker m={sel} onChange={(m) => { setSel(m); reload(); }} /> : sel.type.startsWith('image/') && <img class="media-big" src={mediaUrl(sel.key)} alt="" />}
           <Field label="Link" mono value={`${location.origin}${mediaUrl(sel.key)}`} onInput={() => {}} />
           <p class="muted small">{(sel.size / 1024).toFixed(0)} KB · {sel.type}</p>
           <ConfirmBtn label="Delete file" onConfirm={async () => { await api(`/admin/media/${sel.key}`, { method: 'DELETE' }); setSel(null); reload(); }} />
         </Sheet>
+      )}
+    </div>
+  );
+}
+
+/* ---------- Focal point: where crops centre on ---------- */
+const FOCAL_LABEL: Record<string, string> = { 'auto-face': 'Face found automatically', 'auto-person': 'Person found automatically', 'auto-object': 'Main subject found automatically', manual: 'Set by you' };
+function FocalPicker({ m, onChange }: { m: any; onChange: (m: any) => void }) {
+  const [busy, setBusy] = useState(false);
+  const pos = focalPos(m);
+  async function set(body: any) {
+    setBusy(true);
+    try { onChange(await api(`/admin/media/${m.key}/focal`, { method: 'PUT', body })); toast.ok('Focus saved'); } catch (e) { toast.err(e); } finally { setBusy(false); }
+  }
+  function tap(e: MouseEvent) {
+    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    set({ x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height });
+  }
+  return (
+    <div class="focal">
+      <p class="muted small">Tap the face or subject. Every crop on the site keeps that spot in view.</p>
+      <div class="focal-img" onClick={tap}>
+        <img src={mediaUrl(m.key)} alt="" />
+        {pos && <span class="focal-dot" style={{ left: `${m.focal_x * 100}%`, top: `${m.focal_y * 100}%` }} />}
+      </div>
+      <p class="small">{pos ? FOCAL_LABEL[m.focal_source] || 'Focus set' : 'No focus set, so crops use the centre.'}</p>
+      <div class="focal-previews" aria-label="How crops will look">
+        {[['1 / 1', 'Square'], ['4 / 5', 'Portrait'], ['16 / 9', 'Wide']].map(([r, l]) => (
+          <figure><img src={mediaUrl(m.key)} alt="" style={{ aspectRatio: r, objectPosition: pos || '50% 50%' }} /><figcaption>{l}</figcaption></figure>
+        ))}
+      </div>
+      <div class="row wrap">
+        <Btn kind="ghost" small busy={busy} onClick={() => set({ detect: true })}>Find face again</Btn>
+        {pos && <Btn kind="plain" small onClick={() => set({})}>Reset to centre</Btn>}
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Inspiration: websites, images and PDFs that AI designs from ---------- */
+function InspirationTab({ s, setInsp, addThemes, useTheme }: { s: any; setInsp: (v: any) => void; addThemes: (t: any[]) => void; useTheme: (t: any) => void }) {
+  const insp = s.inspiration || { urls: [], files: [], notes: '' };
+  const [url, setUrl] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [making, setMaking] = useState(false);
+  const [provider, setProvider] = useState('auto');
+  const [result, setResult] = useState<any>(null);
+  function addUrls(text: string) {
+    const list = text.split(/[\s,]+/).map((u) => u.trim()).filter((u) => /\./.test(u));
+    if (!list.length) return;
+    setInsp({ ...insp, urls: [...insp.urls, ...list.filter((u) => !insp.urls.includes(u))] });
+    setUrl('');
+  }
+  async function onFiles(files: FileList | null) {
+    if (!files?.length) return;
+    setBusy(true);
+    const added: any[] = [];
+    try {
+      for (const f of Array.from(files)) { const r = await upload(f, 'Design inspiration'); added.push({ key: r.key, name: f.name, type: f.type }); }
+      toast.ok(`${added.length} file${added.length === 1 ? '' : 's'} added`);
+    } catch (e) { toast.err(e); } finally {
+      setInsp({ ...insp, files: [...insp.files, ...added] });
+      setBusy(false);
+    }
+  }
+  async function make() {
+    setMaking(true); setResult(null);
+    try {
+      const r = await api('/admin/ai/theme', { method: 'POST', body: { urls: insp.urls, files: insp.files.map((f: any) => f.key), notes: insp.notes, provider } });
+      setResult(r);
+      addThemes(r.themes);
+      toast.ok('Three themes are ready. Save changes to keep them.');
+    } catch (e) { toast.err(e); } finally { setMaking(false); }
+  }
+  return (
+    <div class="stack">
+      <div class="grid2">
+        <Card title="Websites you like">
+          <form class="row" onSubmit={(e) => { e.preventDefault(); addUrls(url); }}>
+            <input class="input grow" type="text" inputMode="url" placeholder="example.com, or paste several" value={url} onInput={(e) => setUrl((e.target as HTMLInputElement).value)} onPaste={(e) => { const t = e.clipboardData?.getData('text') || ''; if (/[\s,]/.test(t.trim())) { e.preventDefault(); addUrls(t); } }} />
+            <Btn type="submit" kind="ghost" disabled={!url.trim()}>Add</Btn>
+          </form>
+          {insp.urls.length ? (
+            <ul class="chips">
+              {insp.urls.map((u: string) => <li><a href={/^https?:/.test(u) ? u : `https://${u}`} target="_blank" rel="noopener">{u.replace(/^https?:\/\//, '')}</a><button type="button" aria-label={`Remove ${u}`} onClick={() => setInsp({ ...insp, urls: insp.urls.filter((x: string) => x !== u) })}>&times;</button></li>)}
+            </ul>
+          ) : <p class="muted small">Add as many as you like. Their colours, fonts and shapes are read for you.</p>}
+        </Card>
+        <Card title="Images, screenshots and PDFs">
+          <label class={`btn ghost${busy ? ' busy' : ''}`}><input type="file" multiple hidden accept="image/png,image/jpeg,image/webp,image/gif,application/pdf" onChange={(e) => onFiles((e.target as HTMLInputElement).files)} />Upload files</label>
+          {insp.files.length ? (
+            <div class="media-grid">
+              {insp.files.map((f: any) => (
+                <div class="media-item insp">
+                  {f.type.startsWith('image/') ? <img src={mediaUrl(f.key)} alt={f.name} loading="lazy" /> : <span class="file mono">{f.name}</span>}
+                  <button type="button" class="x" aria-label={`Remove ${f.name}`} onClick={() => setInsp({ ...insp, files: insp.files.filter((x: any) => x.key !== f.key) })}>&times;</button>
+                </div>
+              ))}
+            </div>
+          ) : <p class="muted small">Mood boards, brand guides, screenshots, photos. Pick several at once.</p>}
+        </Card>
+      </div>
+      <Card title="What you are after">
+        <Area label="Notes (optional)" rows={3} value={insp.notes} onInput={(v) => setInsp({ ...insp, notes: v })} hint="For example: calm and premium, more colour than Apple, nothing too corporate." />
+        <div class="row wrap">
+          <ProviderPicker value={provider} onChange={setProvider} />
+          <Btn busy={making} disabled={!insp.urls.length && !insp.files.length && !insp.notes.trim()} onClick={make}>Create themes from this</Btn>
+        </div>
+        <p class="muted small">Image and PDF references need a model that can see: Claude, Gemini or ChatGPT.</p>
+      </Card>
+      {result && (
+        <Card title="Made for you">
+          {result.summary && <p>{result.summary}</p>}
+          <div class="tgrid">
+            {result.themes.map((th: any) => (
+              <div class="tcard">
+                <div class="tsample" style={{ background: th.light.paper, color: th.light.ink, borderRadius: `${th.radius}px`, fontFamily: `'${th.fontBody}', sans-serif` }}>
+                  <strong style={{ fontFamily: `'${th.fontDisplay}', sans-serif`, fontSize: '22px' }}>{th.name}</strong>
+                  <span style={{ color: th.light.muted }}>{th.description}</span>
+                  <span class="tswatch">{['paper', 'ink', 'muted', 'accent', 'line'].map((k) => <i style={{ background: th.light[k] }} />)}<em>dark</em>{['paper', 'ink', 'accent'].map((k) => <i style={{ background: th.dark[k] }} />)}</span>
+                  <span style={{ background: th.light.accent, color: th.light.onAccent, padding: '4px 10px', borderRadius: `${th.radius}px`, alignSelf: 'flex-start' }}>Button</span>
+                </div>
+                <Btn small kind="accent" onClick={() => useTheme(th)}>Use this</Btn>
+              </div>
+            ))}
+          </div>
+          {result.sources?.some((x: any) => !x.ok) && <p class="muted small">Could not read: {result.sources.filter((x: any) => !x.ok).map((x: any) => `${x.url} (${x.note})`).join('; ')}</p>}
+          {result.skipped?.length ? <p class="muted small">Skipped: {result.skipped.join('; ')}</p> : null}
+          <p class="muted small">All three are in Themes and dark mode too, where you can fine-tune them.</p>
+        </Card>
       )}
     </div>
   );

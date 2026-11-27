@@ -1,4 +1,6 @@
 import { Hono } from 'hono';
+import { detectFocal, imageSize, type Focal } from './focal';
+import { readSite, loadFiles } from './inspire';
 import type { AppEnv, Env } from './env';
 import { createLoginLink, useLoginLink, login, logout, currentUser, requireAuth, need, can, hashPassword, validPassword, effectivePermissions, timingSafeEqual } from './auth';
 import { PERMISSIONS } from './permissions';
@@ -212,8 +214,32 @@ a.post('/admin/media', async (c) => {
   const file = form.get('file') as unknown as File | null;
   if (!file || typeof file === 'string') return c.json({ error: 'No file received' }, 400);
   if (file.size > 25 * 1024 * 1024) return c.json({ error: 'Files must be under 25 MB' }, 400);
-  const key = await storeMedia(c.env, file.name, file.type || 'application/octet-stream', await file.arrayBuffer(), String(form.get('alt') || ''));
+  const num = (k: string) => { const v = parseFloat(String(form.get(k) ?? '')); return Number.isFinite(v) ? v : undefined; };
+  const fx = num('fx'), fy = num('fy');
+  const key = await storeMedia(c.env, file.name, file.type || 'application/octet-stream', await file.arrayBuffer(), String(form.get('alt') || ''), {
+    focal: fx !== undefined && fy !== undefined ? { x: fx, y: fy, source: String(form.get('fsource') || 'auto-face') } : undefined,
+    w: num('w'), h: num('h'),
+  });
   return c.json({ key, url: `/media/${key}` });
+});
+a.put('/admin/media/:key{.+}/focal', async (c) => {
+  need(c, 'media.upload');
+  const key = c.req.param('key');
+  const b = await c.req.json<{ x?: number; y?: number; detect?: boolean }>().catch(() => ({} as any));
+  let focal: Focal | null = null;
+  if (b.detect) {
+    const obj = await c.env.MEDIA?.get(key);
+    if (!obj) return c.json({ error: 'File not found' }, 404);
+    const buf = await obj.arrayBuffer();
+    const row = await c.env.DB.prepare('SELECT width, height FROM media WHERE key = ?').bind(key).first<{ width: number; height: number }>();
+    focal = await detectFocal(c.env, buf, row?.width ? { w: row.width, h: row.height } : imageSize(buf));
+    if (!focal) return c.json({ error: c.env.AI ? 'No person or clear subject found. Tap the photo to set the focus yourself.' : 'Automatic detection is not available. Tap the photo to set the focus yourself.' }, 400);
+  } else if (typeof b.x === 'number' && typeof b.y === 'number') {
+    focal = { x: Math.min(1, Math.max(0, b.x)), y: Math.min(1, Math.max(0, b.y)), source: 'manual' };
+  }
+  if (focal) await c.env.DB.prepare('UPDATE media SET focal_x = ?, focal_y = ?, focal_source = ? WHERE key = ?').bind(focal.x, focal.y, focal.source, key).run();
+  else await c.env.DB.prepare('UPDATE media SET focal_x = NULL, focal_y = NULL, focal_source = NULL WHERE key = ?').bind(key).run();
+  return c.json(await c.env.DB.prepare('SELECT * FROM media WHERE key = ?').bind(key).first());
 });
 a.delete('/admin/media/:key{.+}', async (c) => {
   need(c, 'media.delete');
@@ -223,14 +249,22 @@ a.delete('/admin/media/:key{.+}', async (c) => {
   return c.json({ ok: true });
 });
 
-async function storeMedia(env: Env, name: string, type: string, data: ArrayBuffer | string, alt = ''): Promise<string> {
+async function storeMedia(env: Env, name: string, type: string, data: ArrayBuffer | string, alt = '', opts: { focal?: Focal; w?: number; h?: number } = {}): Promise<string> {
   const ext = (name.match(/\.([a-z0-9]+)$/i)?.[1] || type.split('/')[1] || 'bin').toLowerCase().replace('svg+xml', 'svg');
   const base = slugify(name.replace(/\.[^.]+$/, '')).slice(0, 40);
   const key = `${new Date().toISOString().slice(0, 7)}/${base}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
   const size = typeof data === 'string' ? new TextEncoder().encode(data).length : data.byteLength;
   if (!env.MEDIA) throw new Error('Media storage is not switched on yet. Enable R2 in Cloudflare, then redeploy.');
   await env.MEDIA.put(key, data, { httpMetadata: { contentType: type } });
-  await env.DB.prepare('INSERT INTO media (key, name, type, size, alt) VALUES (?, ?, ?, ?, ?)').bind(key, name, type, size, alt).run();
+  // Keep faces and subjects in frame however the photo is cropped
+  let focal = opts.focal, dims: { w: number; h: number } | null = opts.w && opts.h ? { w: opts.w, h: opts.h } : null;
+  if (typeof data !== 'string' && type.startsWith('image/') && !type.includes('svg')) {
+    dims = dims || imageSize(data);
+    if (!focal && data.byteLength < 10 * 1024 * 1024) focal = (await detectFocal(env, data, dims)) || undefined;
+  }
+  const fp = focal ? [Math.min(1, Math.max(0, focal.x)), Math.min(1, Math.max(0, focal.y)), focal.source] : [null, null, null];
+  await env.DB.prepare('INSERT INTO media (key, name, type, size, alt, focal_x, focal_y, focal_source, width, height) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+    .bind(key, name, type, size, alt, ...fp, dims?.w ?? null, dims?.h ?? null).run();
   return key;
 }
 
@@ -345,6 +379,62 @@ a.post('/admin/ai/logo', async (c) => {
   const svg = cleanSvg(res.text);
   const key = await storeMedia(c.env, `${kind}-ai.svg`, 'image/svg+xml', svg);
   return c.json({ key, url: `/media/${key}`, svg, provider: res.provider });
+});
+
+/* Design from inspiration: several websites, images and PDFs in, three theme options out */
+const THEME_FONTS = ['Bricolage Grotesque', 'Schibsted Grotesk', 'Syne', 'Unbounded', 'Space Grotesk', 'Hanken Grotesk', 'Figtree', 'Manrope', 'Geist', 'Inter Tight', 'DM Sans', 'Instrument Sans', 'Newsreader', 'Literata', 'Fraunces', 'Martian Mono', 'DM Mono', 'Space Mono', 'IBM Plex Mono', 'JetBrains Mono'];
+a.post('/admin/ai/theme', async (c) => {
+  need(c, 'design.manage');
+  const b = await c.req.json<{ urls?: string[]; files?: string[]; notes?: string; provider?: any }>().catch(() => ({} as any));
+  const urls = (b.urls || []).map((u: string) => String(u).trim()).filter(Boolean).slice(0, 8);
+  const keys = (b.files || []).map(String).filter(Boolean);
+  if (!urls.length && !keys.length && !String(b.notes || '').trim()) return c.json({ error: 'Add at least one website, file, or note first.' }, 400);
+  const s = await getSettings(c.env);
+  const [sites, loaded] = await Promise.all([Promise.all(urls.map(readSite)), loadFiles(c.env, keys)]);
+  const attachments = [...loaded.files, ...sites.flatMap((x) => (x.image ? [x.image] : []))];
+  const siteText = sites.map((x, i) => x.ok
+    ? `Website ${i + 1}: ${x.url}
+Title: ${x.title || ''}
+Description: ${x.description || ''}
+Theme colour: ${x.themeColor || 'none'}
+Most used colours: ${x.colors?.join(', ')}
+Colour variables: ${x.vars?.join('; ')}
+Fonts: ${x.fonts?.join(', ')}
+Corner radius: ${x.radius?.join(', ')}`
+    : `Website ${i + 1}: ${x.url} could not be read (${x.note}).`).join('\n\n');
+  const res = await generate(c.env, s, {
+    task: attachments.length ? 'vision' : 'design', provider: b.provider, json: true, maxTokens: 3000, attachments,
+    system: 'You are a senior brand and web designer. You study references and turn what makes them work into a distinctive, personal website theme. You never copy a brand outright and never produce the generic AI look (no cream with serif and terracotta, no purple gradients). Colours must pass WCAG AA: ink on paper at least 7:1, muted on paper at least 4.5:1, onAccent on accent at least 4.5:1.',
+    prompt: `Create three theme options for the personal website of ${s.site.name} (${s.site.tagline}), each taking a different angle on the inspiration below.
+
+${siteText || 'No websites given.'}
+${attachments.length ? `\n${attachments.length} image or PDF reference(s) are attached. Study their colour, typography, contrast, spacing and mood.` : ''}
+${b.notes ? `\nNotes from the owner: ${b.notes}` : ''}
+
+Fonts must come from this list only: ${THEME_FONTS.join(', ')}. fontMono must be one of the Mono fonts.
+radius is a number of pixels from 0 to 24.
+All colours are 6 digit hex. Give a light palette and a matching dark palette.
+
+Return JSON: {"summary":"two sentences on what you took from the references","themes":[{"name":"short evocative name","description":"one sentence","fontDisplay":"","fontBody":"","fontMono":"","radius":4,"light":{"paper":"#","ink":"#","muted":"#","accent":"#","onAccent":"#","line":"#"},"dark":{"paper":"#","ink":"#","muted":"#","accent":"#","onAccent":"#","line":"#"}}]}`,
+  });
+  const out = extractJson<any>(res.text) || {};
+  const hex = (v: any, d: string) => (typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v.trim()) ? v.trim().toUpperCase() : d);
+  const font = (v: any, d: string, mono = false) => (THEME_FONTS.includes(v) && v.includes('Mono') === mono ? v : d);
+  const base = THEME_PRESETS.kowhai;
+  const pal = (p: any, d: any) => Object.fromEntries(Object.keys(d).map((k) => [k, hex(p?.[k], d[k])]));
+  const themes = (Array.isArray(out.themes) ? out.themes : []).slice(0, 3).map((t: any, i: number) => deepNoEmDash({
+    id: `mine-${Date.now().toString(36)}-${i}`,
+    name: String(t.name || `Inspired ${i + 1}`).slice(0, 40),
+    description: String(t.description || 'Made from your inspiration').slice(0, 160),
+    fontDisplay: font(t.fontDisplay, base.fontDisplay), fontBody: font(t.fontBody, base.fontBody), fontMono: font(t.fontMono, base.fontMono, true),
+    radius: Math.max(0, Math.min(24, Math.round(Number(t.radius) || 0))),
+    light: pal(t.light, base.light), dark: pal(t.dark, base.dark),
+  }));
+  if (!themes.length) return c.json({ error: 'The AI did not return a usable theme. Try again or pick another model.' }, 502);
+  return c.json({
+    summary: noEmDash(String(out.summary || '')), themes, provider: res.provider,
+    sources: sites.map((x) => ({ url: x.url, ok: x.ok, note: x.note })), skipped: loaded.skipped,
+  });
 });
 
 a.post('/admin/ai/module', async (c) => {

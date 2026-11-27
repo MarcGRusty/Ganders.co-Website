@@ -138,7 +138,7 @@ main{max-width:1240px;margin:0 auto;padding:0 16px}
 .article.wide{max-width:1040px}
 .a-head{padding:48px 0 28px}
 .a-head .lede{margin-top:18px}
-.a-cover{margin:0 0 36px}.a-cover img{width:100%;border-radius:var(--radius)}
+.a-cover{margin:0 0 36px}.a-cover img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:var(--radius)}
 .a-tags{margin-top:40px;display:flex;gap:14px;flex-wrap:wrap}.a-tags a{color:var(--muted);text-decoration:none}
 .a-back{margin-top:36px}
 

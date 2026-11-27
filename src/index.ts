@@ -7,6 +7,7 @@ import { renderContent } from './modules';
 import { api } from './api';
 import { noEmDash, esc } from './util';
 import { sendMail, notifyAddress } from './mail';
+import { withFocal } from './focal';
 
 const app = new Hono<AppEnv>();
 
@@ -28,6 +29,12 @@ app.use('*', async (c, next) => {
     return c.redirect(c.env.STUDIO_URL, 302);
   }
   await next();
+});
+
+// Public pages: point every cropped photo at its face or subject
+app.use('*', async (c, next) => {
+  await next();
+  if (c.req.method === 'GET' && !c.req.path.startsWith('/api/') && !c.req.path.startsWith('/media/')) c.res = await withFocal(c.env, c.res);
 });
 
 app.route('/api', api);
