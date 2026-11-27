@@ -2,7 +2,7 @@ import { h } from 'preact';
 import { useState } from 'preact/hooks';
 import { api, adm, mediaUrl, upload } from '../api';
 import { ThemesTab, FONTS as THEME_FONTS } from './themes';
-import { Area, Btn, Card, ColorField, ConfirmBtn, Empty, Field, Head, ImageField, ProviderPicker, Select, Sheet, Spinner, Toggle, toast, useLoad, Pending } from '../ui';
+import { Area, Btn, Card, ColorField, ConfirmBtn, Empty, Field, Head, ImageField, ProviderPicker, Select, Sheet, Spinner, Toggle, toast, useLoad, Pending, fmt } from '../ui';
 
 /* ---------- Ventures ---------- */
 const blankBiz = { name: '', url: '', tagline: '', description: '', role: 'Founder', since: '', logo: '', accent: '', active: 1 };
@@ -91,12 +91,12 @@ export function Design() {
   async function save() {
     setBusy(true);
     try {
-      const r = await api('/admin/settings', { method: 'PUT', body: { site: s.site, theme: s.theme, themes: s.themes, home: s.home, contact: s.contact, nav: s.nav, social: s.social, seo: s.seo } });
+      const r = await api('/admin/settings', { method: 'PUT', body: { site: s.site, theme: s.theme, themes: s.themes, home: s.home, contact: s.contact, mail: s.mail, nav: s.nav, social: s.social, seo: s.seo } });
       setData({ ...data, settings: r.settings });
       toast.ok('Saved. Changes are live.');
     } catch (e) { toast.err(e); } finally { setBusy(false); }
   }
-  const tabs: [string, string][] = [['identity', 'Identity'], ['theme', 'Themes and dark mode'], ['home', 'Home page'], ['contact', 'Contact page'], ['menu', 'Menu and links'], ['seo', 'Search']];
+  const tabs: [string, string][] = [['identity', 'Identity'], ['theme', 'Themes and dark mode'], ['home', 'Home page'], ['contact', 'Contact page'], ['email', 'Email'], ['menu', 'Menu and links'], ['seo', 'Search']];
   return (
     <div class="view">
       <Head title="Design" sub="Everything visitors see. Save, then refresh the site to check it.">
@@ -192,6 +192,8 @@ export function Design() {
           </Card>
         </div>
       )}
+
+      {tab === 'email' && <EmailTab s={s} upd={upd} />}
 
       {tab === 'menu' && (
         <div class="grid2">
@@ -296,6 +298,35 @@ export function Media() {
           <ConfirmBtn label="Delete file" onConfirm={async () => { await api(`/admin/media/${sel.key}`, { method: 'DELETE' }); setSel(null); reload(); }} />
         </Sheet>
       )}
+    </div>
+  );
+}
+
+/* ---------- Email sender, test and log ---------- */
+function EmailTab({ s, upd }: { s: any; upd: (g: string, k: string) => (v: any) => void }) {
+  const { data, reload } = useLoad<any>(() => api('/admin/email/log'));
+  const [testing, setTesting] = useState(false);
+  async function test() {
+    setTesting(true);
+    try { const r = await api('/admin/email/test', { method: 'POST', body: {} }); toast.ok(r.message); } catch (e) { toast.err(e); } finally { setTesting(false); reload(); }
+  }
+  return (
+    <div class="grid2">
+      <Card title="Sender">
+        <Field label="From name" value={s.mail.fromName} onInput={upd('mail', 'fromName')} hint={`Leave empty to use "${s.site.name}".`} />
+        <Field label="From address" type="email" value={s.mail.fromAddress} onInput={upd('mail', 'fromAddress')} hint="Must be on a domain verified in Resend." />
+        <Field label="Replies go to" type="email" value={s.mail.replyTo} onInput={upd('mail', 'replyTo')} hint={`Leave empty to use ${s.site.email || 'the email on the Identity tab'}.`} />
+        <p class="muted small">Save changes first, then send a test.</p>
+      </Card>
+      <Card title="Status">
+        <p>{data ? (data.ready ? 'Email is connected.' : 'Email is not connected yet. Add RESEND_API_KEY as a GitHub secret and redeploy.') : 'Checking...'}</p>
+        <Btn kind="ghost" busy={testing} disabled={!data?.ready} onClick={test}>Send me a test email</Btn>
+        {data?.log?.length ? (
+          <ul class="list small">
+            {data.log.slice(0, 10).map((l: any) => <li><span class={l.ok ? '' : 'err'}>{l.ok ? 'Sent' : 'Failed'}</span> {l.kind} to {l.to_addr}, {fmt(l.created_at)}{l.ok ? '' : `: ${l.detail}`}</li>)}
+          </ul>
+        ) : <p class="muted small">Nothing sent yet.</p>}
+      </Card>
     </div>
   );
 }

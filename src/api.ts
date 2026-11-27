@@ -417,7 +417,7 @@ a.post('/admin/messages/:id{[0-9]+}/reply', async (c) => {
   const me = c.get('user')!;
   const body = noEmDash(text.trim());
   const quoted = `\n\n---\nOn ${m.created_at} UTC, ${m.name} wrote:\n${m.body.split('\n').map((l: string) => '> ' + l).join('\n')}`;
-  const r = await sendMail(c.env, { kind: 'reply', to: m.email, subject: `Re: ${m.topic || 'your message'}`, text: body + quoted, replyTo: s.site.email || undefined }, s.site.name);
+  const r = await sendMail(c.env, { kind: 'reply', to: m.email, subject: `Re: ${m.topic || 'your message'}`, text: body + quoted, replyTo: s.mail.replyTo || s.site.email || undefined }, s.site.name);
   if (!r.ok) return c.json({ error: `The reply was not sent: ${r.detail}` }, 400);
   const note = `${new Date().toISOString().slice(0, 16).replace('T', ' ')} ${me.name || me.email} replied:\n${body}`;
   await c.env.DB.prepare("UPDATE messages SET status = 'read', replied_at = datetime('now'), handled_by = ?, notes = TRIM(COALESCE(notes, '') || char(10) || char(10) || ?) WHERE id = ?").bind(me.email, note, id).run();

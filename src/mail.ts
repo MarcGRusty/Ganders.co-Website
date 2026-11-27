@@ -1,12 +1,13 @@
 import type { Env } from './env';
 import { esc } from './util';
+import { getSettings } from './settings';
 
 export interface Mail { to: string | string[]; subject: string; text: string; html?: string; replyTo?: string; kind: string }
 
 /**
  * Sends email through Resend (https://resend.com). Set RESEND_API_KEY and verify
- * your domain there. MAIL_FROM defaults to "Marc Gander <hello@ganders.co>" style
- * using the site settings. Every attempt is logged so problems show up in Studio.
+ * your domain there. The sender comes from Studio (Design, Email), then MAIL_FROM,
+ * then hello@ the site domain. Every attempt is logged so problems show up in Studio.
  */
 export function mailReady(env: Env): boolean {
   return !!env.RESEND_API_KEY;
@@ -18,12 +19,16 @@ export async function sendMail(env: Env, m: Mail, fromName = 'Ganders.co'): Prom
   if (!env.RESEND_API_KEY) {
     detail = 'Email is not set up yet (RESEND_API_KEY missing)';
   } else {
-    const from = String(env.MAIL_FROM || `${fromName} <hello@${new URL(env.SITE_URL).hostname}>`);
+    const st = await getSettings(env).catch(() => null);
+    const name = (st?.mail.fromName || st?.site.name || fromName).replace(/[<>"]/g, '');
+    const addr = st?.mail.fromAddress?.trim();
+    const from = addr ? `${name} <${addr}>` : String(env.MAIL_FROM || `${name} <hello@${new URL(env.SITE_URL).hostname}>`);
+    const replyTo = m.replyTo || st?.mail.replyTo || st?.site.email || undefined;
     try {
       const r = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: { authorization: `Bearer ${env.RESEND_API_KEY}`, 'content-type': 'application/json' },
-        body: JSON.stringify({ from, to, subject: m.subject, text: m.text, html: m.html || textToHtml(m.text), ...(m.replyTo ? { reply_to: m.replyTo } : {}) }),
+        body: JSON.stringify({ from, to, subject: m.subject, text: m.text, html: m.html || textToHtml(m.text), ...(replyTo ? { reply_to: replyTo } : {}) }),
       });
       const d: any = await r.json().catch(() => ({}));
       ok = r.ok;

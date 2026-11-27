@@ -67,6 +67,11 @@ export interface SiteSettings {
     showEmail: boolean;
     notes: string[];
   };
+  mail: {
+    fromName: string;
+    fromAddress: string;
+    replyTo: string;
+  };
   nav: NavItem[];
   social: SocialLink[];
   ai: {
@@ -131,6 +136,11 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     success: 'Thanks. Your message is in, and I read every one myself.',
     showEmail: true,
     notes: ['I reply to most messages within two working days.', 'For customer support, the fastest route is through the business itself. Find them all on the Ventures page.'],
+  },
+  mail: {
+    fromName: '',
+    fromAddress: 'NoReply@ganders.co',
+    replyTo: '',
   },
   nav: [
     { label: 'Home', href: '/' },

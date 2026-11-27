@@ -27,6 +27,8 @@ Email goes through [Resend](https://resend.com). Add your domain there, set the 
 - you can reply to messages from the Inbox, and the reply is logged on the message,
 - people can sign in with an emailed link.
 
+Email is sent from `NoReply@ganders.co` by default. Change the sender name, address and reply-to address in Studio under Design, Email, where you can also send a test and see recent sends.
+
 ## Live deploys from GitHub
 
 `.github/workflows/deploy.yml` deploys on every push to `main` (and the current build branch). It creates the D1 database and R2 bucket on the first run, applies migrations, deploys, and copies any of these GitHub secrets to the Worker: `ADMIN_PASSWORD`, `SESSION_SECRET`, `OWNER_EMAIL`, `RESEND_API_KEY`, the AI keys, and the Meta keys.
