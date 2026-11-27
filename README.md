@@ -7,6 +7,31 @@ The personal and entrepreneurial site for Marc Gander, with its own CMS ("Studio
 - **Mobile first**: both the site and Studio are designed for phones first and scale up to tablet and desktop.
 - **House rule**: no em dashes anywhere. They are converted on save, in the editor as you type or paste, in every AI response, and again when pages render.
 
+## Studio, people and permissions
+
+Studio answers on **studio.ganders.co** and **admin.ganders.co** (and `/admin` on the main domain, which forwards to `STUDIO_URL`).
+
+Everyone signs in with their own email, using a password or a one time link sent by email. The very first sign in uses `OWNER_EMAIL` and `ADMIN_PASSWORD` and creates the Owner account.
+
+- **Roles** are bundles of permissions. Owner, Administrator, Editor, Writer and Viewer come built in, and you can create your own and tick exactly what each can do.
+- **Groups** are teams of people. Everyone in a group gets the group's roles plus any extra permissions set on the group.
+- **Custom permissions** can be created for things you build, then added to any role or group.
+- Every Studio action is checked on the server. There is always at least one active Owner, and only an Owner can hand out the Owner role.
+
+## Email
+
+Email goes through [Resend](https://resend.com). Add your domain there, set the DNS records it shows, then set `RESEND_API_KEY`. With that in place:
+
+- every Contact form message is emailed to `OWNER_EMAIL` (or `NOTIFY_EMAIL`) and also lands in the Studio Inbox,
+- you can reply to messages from the Inbox, and the reply is logged on the message,
+- people can sign in with an emailed link.
+
+## Live deploys from GitHub
+
+`.github/workflows/deploy.yml` deploys on every push to `main` (and the current build branch). It creates the D1 database and R2 bucket on the first run, applies migrations, deploys, and copies any of these GitHub secrets to the Worker: `ADMIN_PASSWORD`, `SESSION_SECRET`, `OWNER_EMAIL`, `RESEND_API_KEY`, the AI keys, and the Meta keys.
+
+Required GitHub secrets: `CLOUDFLARE_API_TOKEN` (template "Edit Cloudflare Workers" plus D1 Edit) and `CLOUDFLARE_ACCOUNT_ID`.
+
 ## Stack
 
 | Piece | What it does |

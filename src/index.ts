@@ -6,8 +6,29 @@ import { homeView, venturesView, writingView, postView, pageView, notFoundView, 
 import { renderContent } from './modules';
 import { api } from './api';
 import { noEmDash, esc } from './util';
+import { sendMail, notifyAddress } from './mail';
 
 const app = new Hono<AppEnv>();
+
+/**
+ * Studio lives on its own subdomains: admin.ganders.co and studio.ganders.co.
+ * On those hosts every page path serves the Studio app; /api and /media work as normal.
+ * On the main site, /admin sends people to the Studio subdomain once it is set up.
+ */
+const isStudioHost = (host: string) => /^(admin|studio)\./i.test(host);
+app.use('*', async (c, next) => {
+  const url = new URL(c.req.url);
+  if (isStudioHost(url.hostname)) {
+    const p = url.pathname;
+    if (p.startsWith('/api/') || p.startsWith('/media/') || p === '/favicon.svg') return next();
+    const res = await c.env.ASSETS.fetch(new Request(new URL('/admin/', url)));
+    return new Response(res.body, { status: 200, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-robots-tag': 'noindex' } });
+  }
+  if ((url.pathname === '/admin' || url.pathname === '/admin/') && c.env.STUDIO_URL && url.hostname === new URL(c.env.SITE_URL).hostname) {
+    return c.redirect(c.env.STUDIO_URL, 302);
+  }
+  await next();
+});
 
 app.route('/api', api);
 
@@ -84,6 +105,17 @@ async function takeMessage(c: any, d: Record<string, string>): Promise<string | 
   if ((recent?.n ?? 0) >= 5) return 'Thanks, I already have a few messages from you. Please try again a little later.';
   await c.env.DB.prepare('INSERT INTO messages (name, email, topic, company, body, ip_hash) VALUES (?, ?, ?, ?, ?, ?)')
     .bind(name, email, (d.topic || '').slice(0, 80), (d.company || '').slice(0, 160), body, ipHash).run();
+  // Email the owner straight away; the message is also in the Studio Inbox
+  const s = await getSettings(c.env);
+  const to = notifyAddress(c.env, s.site.email);
+  if (to) {
+    const studio = c.env.STUDIO_URL || `${new URL(c.req.url).origin}/admin/`;
+    c.executionCtx.waitUntil(sendMail(c.env, {
+      kind: 'contact', to, replyTo: email,
+      subject: `New message from ${name}${d.topic ? ` (${d.topic})` : ''}`,
+      text: `${name}${d.company ? `, ${d.company}` : ''} <${email}>\nTopic: ${d.topic || 'Not given'}\n\n${body}\n\nReply to this email to answer directly, or open the Inbox: ${studio}#/inbox`,
+    }, s.site.name));
+  }
   if (c.env.CONTACT_WEBHOOK_URL) {
     c.executionCtx.waitUntil(fetch(String(c.env.CONTACT_WEBHOOK_URL), { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name, email, topic: d.topic, company: d.company, message: body }) }).catch(() => {}));
   }
@@ -143,6 +175,7 @@ async function notFound(c: any) {
 app.notFound(notFound);
 
 app.onError((err, c) => {
+  if ((err as any).status === 403) return c.json({ error: err.message }, 403);
   console.error(err);
   if (c.req.path.startsWith('/api/')) return c.json({ error: err.message || 'Something went wrong' }, 500);
   return c.text('Something went wrong. Please try again shortly.', 500);

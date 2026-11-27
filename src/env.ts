@@ -3,6 +3,7 @@ export interface Env {
   MEDIA: R2Bucket;
   ASSETS: Fetcher;
   SITE_URL: string;
+  STUDIO_URL?: string;
   ADMIN_PASSWORD?: string;
   SESSION_SECRET?: string;
   ANTHROPIC_API_KEY?: string;
@@ -17,7 +18,12 @@ export interface Env {
   LINKEDIN_TOKEN?: string;
   LINKEDIN_AUTHOR_URN?: string;
   SOCIAL_WEBHOOK_URL?: string;
-  CONTACT_WEBHOOK_URL?: string; // optional: forward contact messages (Zapier, Make, Slack, email service)
+  CONTACT_WEBHOOK_URL?: string;
+  RESEND_API_KEY?: string;
+  MAIL_FROM?: string;      // optional, for example "Marc Gander <hello@ganders.co>"
+  OWNER_EMAIL?: string;    // the first owner's sign in email
+  NOTIFY_EMAIL?: string;   // optional, where form alerts go (defaults to OWNER_EMAIL) // optional: forward contact messages (Zapier, Make, Slack, email service)
   [key: string]: unknown;
 }
-export type AppEnv = { Bindings: Env };
+import type { SessionUser } from './auth';
+export type AppEnv = { Bindings: Env; Variables: { user?: SessionUser } };

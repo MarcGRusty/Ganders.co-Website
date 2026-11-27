@@ -1,12 +1,19 @@
 import { h } from 'preact';
 import { useState } from 'preact/hooks';
-import { adm } from '../api';
-import { Btn, ConfirmBtn, Empty, Head, Sheet, Spinner, fmt, toast, useLoad } from '../ui';
+import { adm, api } from '../api';
+import { can } from '../session';
+import { Area, Btn, ConfirmBtn, Empty, Head, Sheet, Spinner, fmt, toast, useLoad } from '../ui';
 
 export function Inbox() {
   const { data, loading, reload } = useLoad<any[]>(() => adm.list('messages'));
   const [show, setShow] = useState('new');
   const [open, setOpen] = useState<any | null>(null);
+  const [reply, setReply] = useState('');
+  const [sending, setSending] = useState(false);
+  async function send() {
+    setSending(true);
+    try { await api(`/admin/messages/${open.id}/reply`, { body: { text: reply } }); toast.ok(`Reply sent to ${open.email}`); setReply(''); setOpen(null); reload(); } catch (e) { toast.err(e); } finally { setSending(false); }
+  }
   const list = (data || []).filter((m) => show === 'all' || m.status === show);
   async function view(m: any) {
     setOpen(m);
@@ -24,7 +31,7 @@ export function Inbox() {
           {list.map((m) => (
             <li><button class="row-link" onClick={() => view(m)}>
               <span class="row-main"><strong>{m.status === 'new' && <span class="led on" />} {m.name}{m.company ? `, ${m.company}` : ''}</strong><span class="muted">{m.body}</span></span>
-              <span class="row-meta">{m.topic && <span class="pill">{m.topic}</span>}<small>{fmt(m.created_at)}</small></span>
+              <span class="row-meta">{m.replied_at && <span class="pill published">Replied</span>}{m.topic && <span class="pill">{m.topic}</span>}<small>{fmt(m.created_at)}</small></span>
             </button></li>
           ))}
         </ul>
@@ -33,8 +40,14 @@ export function Inbox() {
         <Sheet title={open.name} onClose={() => setOpen(null)}>
           <p class="muted small">{open.topic}{open.company ? ` · ${open.company}` : ''} · {fmt(open.created_at)}</p>
           <p class="msg-body">{open.body}</p>
+          {open.notes && <pre class="notes-log">{open.notes}</pre>}
+          {can('inbox.manage') && (
+            <div class="reply">
+              <Area label={`Reply to ${open.email}`} rows={5} value={reply} onInput={setReply} hint="Sends from the website's address. Their reply comes back to your email." />
+              <div class="row wrap"><Btn busy={sending} disabled={!reply.trim()} onClick={send}>Send reply</Btn><a class="btn plain" href={`mailto:${open.email}?subject=${encodeURIComponent('Re: ' + (open.topic || 'your message'))}`}>Use my email app</a></div>
+            </div>
+          )}
           <div class="row wrap">
-            <a class="btn" href={`mailto:${open.email}?subject=${encodeURIComponent('Re: ' + (open.topic || 'your message'))}`}>Reply to {open.email}</a>
             {open.status !== 'archived' && <Btn kind="ghost" onClick={() => archive(open)}>Archive</Btn>}
             <ConfirmBtn label="Delete" onConfirm={async () => { await adm.remove('messages', open.id); setOpen(null); reload(); }} />
           </div>

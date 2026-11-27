@@ -20,8 +20,17 @@
     { "binding": "MEDIA", "bucket_name": "ganders-co-media" }
   ],
   "vars": {
-    "SITE_URL": "https://ganders.co"
+    "SITE_URL": "https://ganders.co",
+    // Where /admin on the main site sends people. Studio also answers on admin.ganders.co.
+    "STUDIO_URL": "https://studio.ganders.co"
   },
+  // Custom domains. Uncomment once ganders.co is on this Cloudflare account.
+  // "routes": [
+  //   { "pattern": "ganders.co", "custom_domain": true },
+  //   { "pattern": "www.ganders.co", "custom_domain": true },
+  //   { "pattern": "studio.ganders.co", "custom_domain": true },
+  //   { "pattern": "admin.ganders.co", "custom_domain": true }
+  // ],
   "observability": { "enabled": true }
   // Secrets (set with `npx wrangler secret put NAME`, never commit them):
   // ADMIN_PASSWORD, SESSION_SECRET,
