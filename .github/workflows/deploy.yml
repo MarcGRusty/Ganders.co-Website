@@ -53,6 +53,33 @@ jobs:
       - name: Apply database migrations
         run: npx wrangler d1 migrations apply ganders-co --remote
 
+      # Adds studio. and admin. (and the main domain once USE_MAIN_DOMAIN is true) when ganders.co is on this account
+      - name: Attach custom domains
+        env:
+          USE_MAIN_DOMAIN: ${{ vars.USE_MAIN_DOMAIN }}
+        run: |
+          node -e '
+            const h = { Authorization: "Bearer " + process.env.CLOUDFLARE_API_TOKEN };
+            const acct = process.env.CLOUDFLARE_ACCOUNT_ID;
+            (async () => {
+              const z = await (await fetch("https://api.cloudflare.com/client/v4/zones?name=ganders.co", { headers: h })).json();
+              if (!z.success) { console.log("::warning::Could not read zones. The API token needs Zone Read and Workers Routes Edit:", JSON.stringify(z.errors)); return; }
+              const zone = z.result[0];
+              if (!zone) { console.log("::warning::ganders.co is not on this Cloudflare account yet. Add it under Websites, then re-run."); return; }
+              console.log("Zone ganders.co status:", zone.status, "nameservers:", zone.name_servers.join(", "));
+              const d = await (await fetch("https://api.cloudflare.com/client/v4/zones/" + zone.id + "/dns_records?per_page=100", { headers: h })).json();
+              if (d.success) for (const r of d.result) console.log("DNS", r.type, r.name, r.proxied ? "proxied" : "");
+              else console.log("::warning::Could not read DNS records:", JSON.stringify(d.errors));
+              const hosts = ["studio.ganders.co", "admin.ganders.co"];
+              if (process.env.USE_MAIN_DOMAIN === "true") hosts.push("ganders.co", "www.ganders.co");
+              const fs = require("fs");
+              let w = fs.readFileSync("wrangler.jsonc", "utf8");
+              const routes = JSON.stringify(hosts.map((p) => ({ pattern: p, custom_domain: true })));
+              w = w.replace(/"observability"/, "\"routes\": " + routes + ",\n  \"observability\"");
+              fs.writeFileSync("wrangler.jsonc", w);
+              console.log("Attaching:", hosts.join(", "));
+            })().catch((e) => console.log("::warning::" + e.message));'
+
       - name: Deploy
         run: npm run deploy
 
