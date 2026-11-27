@@ -36,6 +36,8 @@ export interface SiteSettings {
     fontBody: string;
     fontMono: string;
     radius: number;
+    headingScale: number;                // 0.7 to 1.3, 1 is the standard headline size
+    textSize: number;                    // body text in px, 15 to 19
     customCss: string;
     light: Palette;
     dark: Palette;
@@ -109,6 +111,8 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     fontBody: 'Montserrat',
     fontMono: 'Martian Mono',
     radius: 3,
+    headingScale: 1,
+    textSize: 16,
     customCss: '',
     light: { paper: '#ECEEEA', ink: '#111A22', muted: '#5B6670', accent: '#F2B825', onAccent: '#111A22', line: '#CDD3CF' },
     dark: { paper: '#101418', ink: '#E9EBE6', muted: '#9AA3AA', accent: '#F2B825', onAccent: '#101418', line: '#252C32' },

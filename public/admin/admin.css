@@ -377,3 +377,8 @@ details.more summary{cursor:pointer;font-weight:600;font-size:.9rem;padding:6px 
 .media-item .x{position:absolute;top:4px;right:4px;font-size:14px;padding:1px 6px;background:rgba(0,0,0,.6);color:#fff;border-radius:999px}
 .tcard .tsample{display:flex;flex-direction:column;gap:8px;padding:16px;border:1px solid rgba(0,0,0,.08);margin-bottom:8px}
 .tswatch{display:flex;gap:4px;align-items:center}.tswatch i{width:18px;height:18px;border-radius:50%;border:1px solid rgba(0,0,0,.15)}.tswatch em{font-size:11px;opacity:.6;margin:0 2px 0 6px}
+
+.type-sample{border:1px solid var(--line);border-radius:10px;padding:14px;margin-top:10px;overflow:hidden}
+.type-sample strong{display:block;line-height:1.05;letter-spacing:-.02em;font-weight:650}
+.type-sample p{margin:10px 0 0}
+input[type=range]{width:100%;accent-color:var(--ink)}

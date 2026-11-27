@@ -65,6 +65,18 @@ export function ThemesTab({ s, presets, setTheme, setThemes }: { s: any; presets
         <Toggle label="Show the light and dark switch on the site" hint="Visitors can flip it, and their choice is remembered on their device." checked={t.toggle !== false} onChange={(v) => setT('toggle', v)} />
       </Card>
 
+      <Card title="Text size">
+        <label class="field">
+          <span>Headlines: {Math.round((t.headingScale ?? 1) * 100)}%</span>
+          <input type="range" min="70" max="130" step="5" value={Math.round((t.headingScale ?? 1) * 100)} onInput={(e) => setT('headingScale', Number((e.target as HTMLInputElement).value) / 100)} />
+        </label>
+        <Select label="Body text" value={String(t.textSize ?? 16)} onChange={(v) => setT('textSize', Number(v))} options={[['15', 'Small (15px)'], ['16', 'Standard (16px)'], ['17', 'Comfortable (17px)'], ['18', 'Large (18px)'], ['19', 'Extra large (19px)']]} />
+        <div class="type-sample" style={{ fontFamily: `'${t.fontBody}', sans-serif` }}>
+          <strong style={{ fontFamily: `'${t.fontDisplay}', sans-serif`, fontSize: `calc(clamp(2rem,7.5vw,4.4rem) * ${t.headingScale ?? 1})` }}>Building useful things.</strong>
+          <p style={{ fontSize: `${t.textSize ?? 16}px` }}>This is how your body text reads. Save changes, then refresh the site to see it everywhere.</p>
+        </div>
+      </Card>
+
       <Card title="Themes">
         <div class="tgrid">
           {all.map((th) => (

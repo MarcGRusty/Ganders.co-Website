@@ -25,7 +25,9 @@ const pal = (p: any) => `--paper:${p.paper};--ink:${p.ink};--muted:${p.muted};--
 export function themeCss(t: SiteSettings['theme']): string {
   const light = t.light || (t as any);
   const dark = t.dark || light;
-  const base = `--radius:${Number(t.radius) || 0}px;--f-display:'${t.fontDisplay}',system-ui,sans-serif;--f-body:'${t.fontBody}',system-ui,sans-serif;--f-mono:'${t.fontMono}',ui-monospace,monospace;`;
+  const hs = Math.min(1.3, Math.max(0.7, Number(t.headingScale) || 1));
+  const ts = Math.min(19, Math.max(15, Number(t.textSize) || 16));
+  const base = `--hs:${hs};--ts:${ts}px;--radius:${Number(t.radius) || 0}px;--f-display:'${t.fontDisplay}',system-ui,sans-serif;--f-body:'${t.fontBody}',system-ui,sans-serif;--f-mono:'${t.fontMono}',ui-monospace,monospace;`;
   const first = t.mode === 'dark' ? dark : light;
   const auto = t.mode === 'auto' ? `@media (prefers-color-scheme:dark){:root:not([data-theme=light]){${pal(dark)}color-scheme:dark}}` : '';
   return `:root{${base}${pal(first)}color-scheme:${t.mode === 'dark' ? 'dark' : 'light'}}${auto}:root[data-theme=light]{${pal(light)}color-scheme:light}:root[data-theme=dark]{${pal(dark)}color-scheme:dark}`;
