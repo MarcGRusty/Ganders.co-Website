@@ -108,6 +108,8 @@ jobs:
           rm -f /tmp/secrets.json
 
       - name: Check the live site
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
         run: |
           SUB=$(curl -s -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).result.subdomain))')
           URL="https://ganders-co.$SUB.workers.dev"
@@ -124,4 +126,10 @@ jobs:
             CODE=$(curl -s -o /dev/null -w '%{http_code}' "https://$H/")
             echo "$CODE https://$H/ (new custom domains can take a few minutes for the certificate)"
           done
+          if [ -n "$RESEND_API_KEY" ]; then
+            curl -s -H "Authorization: Bearer $RESEND_API_KEY" https://api.resend.com/domains | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s);if(!j.data){console.log("Resend:",s.slice(0,200));return}for(const d of j.data)console.log("Resend domain",d.name,d.status)})'
+          else
+            echo "Resend: RESEND_API_KEY not set"
+          fi
+          npx wrangler r2 bucket list 2>/dev/null | grep -q ganders-co-media && echo "R2: bucket ganders-co-media ready" || echo "R2: no bucket"
           exit $FAIL
