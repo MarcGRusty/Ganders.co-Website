@@ -1,6 +1,24 @@
 {
   "updated": "27 Nov 2026",
-  "done": ["Multi page site: Home, About, Ventures, Writing, Contact, plus any pages you add", "Contact page with a form that lands in an Inbox in the admin", "Mobile first public site", "Studio admin with WYSIWYG editor, works on your phone", "AI layer: Claude, ChatGPT, Grok, Gemini, OpenRouter with Auto mode", "Knowledge base and Create Ideas into reviewable drafts", "AI logos, favicons and modules", "Social sharing and API connections", "Code in GitHub (draft pull request #1)"],
-  "doing": ["Waiting on your story, ventures, and photos"],
-  "next": ["Connect Cloudflare and go live on a workers.dev address", "Add your AI keys and social accounts", "Point ganders.co at the Worker"]
+  "done": [
+    "Multi page site: Home, About, Ventures, Writing, Contact, plus any pages you add",
+    "Light and dark mode with a switch, plus 5 themes and a theme builder",
+    "People, roles, groups and custom permissions",
+    "Studio on studio.ganders.co and admin.ganders.co",
+    "Email sign in (password or emailed link)",
+    "Form messages emailed to you and kept in the Inbox, with replies from Studio",
+    "Mobile first site and Studio",
+    "AI: Claude, ChatGPT, Grok, Gemini with Auto mode, Create Ideas, AI logos and modules",
+    "Social sharing and API connections",
+    "Auto deploy from GitHub on every push"
+  ],
+  "doing": [
+    "Waiting on Cloudflare and Resend secrets for the live link",
+    "Waiting on your story, ventures, and photos"
+  ],
+  "next": [
+    "First live deploy on a workers.dev address",
+    "Point ganders.co, studio.ganders.co and admin.ganders.co at it",
+    "Add your AI keys and social accounts"
+  ]
 }

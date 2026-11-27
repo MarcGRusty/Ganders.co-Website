@@ -1,6 +1,7 @@
 import { h } from 'preact';
 import { useState } from 'preact/hooks';
 import { api, adm, mediaUrl, upload } from '../api';
+import { ThemesTab, FONTS as THEME_FONTS } from './themes';
 import { Area, Btn, Card, ColorField, ConfirmBtn, Empty, Field, Head, ImageField, ProviderPicker, Select, Sheet, Spinner, Toggle, toast, useLoad } from '../ui';
 
 /* ---------- Ventures ---------- */
@@ -76,7 +77,7 @@ function VentureSheet({ biz, onClose, onSaved }: { biz: any; onClose: () => void
 }
 
 /* ---------- Design ---------- */
-const FONTS = ['Bricolage Grotesque', 'Schibsted Grotesk', 'Syne', 'Unbounded', 'Space Grotesk', 'Hanken Grotesk', 'Figtree', 'Manrope', 'Geist', 'Inter Tight', 'DM Sans', 'Newsreader', 'Literata', 'Martian Mono', 'DM Mono', 'Space Mono', 'IBM Plex Mono', 'JetBrains Mono'];
+const _FONTS_UNUSED = ['Bricolage Grotesque', 'Schibsted Grotesk', 'Syne', 'Unbounded', 'Space Grotesk', 'Hanken Grotesk', 'Figtree', 'Manrope', 'Geist', 'Inter Tight', 'DM Sans', 'Newsreader', 'Literata', 'Martian Mono', 'DM Mono', 'Space Mono', 'IBM Plex Mono', 'JetBrains Mono'];
 const SECTION_LABELS: Record<string, string> = { hero: 'Intro', now: 'Now strip', ventures: 'Ventures', story: 'Story', writing: 'Writing', contact: 'Contact' };
 
 export function Design() {
@@ -90,12 +91,12 @@ export function Design() {
   async function save() {
     setBusy(true);
     try {
-      const r = await api('/admin/settings', { method: 'PUT', body: { site: s.site, theme: s.theme, home: s.home, contact: s.contact, nav: s.nav, social: s.social, seo: s.seo } });
+      const r = await api('/admin/settings', { method: 'PUT', body: { site: s.site, theme: s.theme, themes: s.themes, home: s.home, contact: s.contact, nav: s.nav, social: s.social, seo: s.seo } });
       setData({ ...data, settings: r.settings });
       toast.ok('Saved. Changes are live.');
     } catch (e) { toast.err(e); } finally { setBusy(false); }
   }
-  const tabs: [string, string][] = [['identity', 'Identity'], ['theme', 'Colours and type'], ['home', 'Home page'], ['contact', 'Contact page'], ['menu', 'Menu and links'], ['seo', 'Search']];
+  const tabs: [string, string][] = [['identity', 'Identity'], ['theme', 'Themes and dark mode'], ['home', 'Home page'], ['contact', 'Contact page'], ['menu', 'Menu and links'], ['seo', 'Search']];
   return (
     <div class="view">
       <Head title="Design" sub="Everything visitors see. Save, then refresh the site to check it.">
@@ -122,36 +123,12 @@ export function Design() {
       )}
 
       {tab === 'theme' && (
-        <div class="grid2">
-          <Card title="Starting points">
-            <div class="presets">
-              {Object.entries<any>(data.presets).map(([k, p]) => (
-                <button class={`preset${s.theme.preset === k ? ' on' : ''}`} onClick={() => setGroup('theme', { ...s.theme, ...p, preset: k })} style={`background:${p.paper};color:${p.ink}`}>
-                  <span class="sw" style={`background:${p.accent}`} /><b style={`font-family:'${p.fontDisplay}'`}>{k}</b><small>{p.fontDisplay}</small>
-                </button>
-              ))}
-            </div>
-          </Card>
-          <Card title="Colours">
-            <div class="two">
-              <ColorField label="Background" value={s.theme.paper} onInput={upd('theme', 'paper')} />
-              <ColorField label="Text" value={s.theme.ink} onInput={upd('theme', 'ink')} />
-              <ColorField label="Soft text" value={s.theme.muted} onInput={upd('theme', 'muted')} />
-              <ColorField label="Highlight" value={s.theme.accent} onInput={upd('theme', 'accent')} />
-              <ColorField label="Text on highlight" value={s.theme.onAccent} onInput={upd('theme', 'onAccent')} />
-              <ColorField label="Lines" value={s.theme.line} onInput={upd('theme', 'line')} />
-            </div>
-          </Card>
-          <Card title="Typography">
-            <Select label="Headlines" value={s.theme.fontDisplay} onChange={upd('theme', 'fontDisplay')} options={FONTS.map((f) => [f, f])} />
-            <Select label="Body text" value={s.theme.fontBody} onChange={upd('theme', 'fontBody')} options={FONTS.map((f) => [f, f])} />
-            <Select label="Labels" value={s.theme.fontMono} onChange={upd('theme', 'fontMono')} options={FONTS.map((f) => [f, f])} />
-            <Field label="Corner roundness (px)" type="number" value={s.theme.radius} onInput={(v) => upd('theme', 'radius')(Number(v))} />
-          </Card>
+        <>
+          <ThemesTab s={s} presets={data.presets} setTheme={(t) => setGroup('theme', t)} setThemes={(list) => setData({ ...data, settings: { ...s, themes: list } })} />
           <Card title="Custom CSS">
             <Area label="Extra styles (advanced)" mono rows={8} value={s.theme.customCss} onInput={upd('theme', 'customCss')} hint="Applied on every page after the theme." />
           </Card>
-        </div>
+        </>
       )}
 
       {tab === 'home' && (

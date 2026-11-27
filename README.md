@@ -4,6 +4,7 @@ The personal and entrepreneurial site for Marc Gander, with its own CMS ("Studio
 
 - **Public site**: separate pages for Home, About, Ventures (each business opens in a new tab), Writing, and Contact (a form that lands in the Studio Inbox), plus any number of extra CMS pages, an RSS feed, and a sitemap.
 - **Studio** at `/admin`: WYSIWYG editor for posts and pages, ventures, design (logo, favicon, colours, fonts, home page layout, menu), media library, knowledge base, AI ideas and drafts, modules, social sharing, and API connections.
+- **Themes**: five built in themes, each with a designed light and dark palette, a visitor light/dark switch that remembers their choice, and a theme builder in Studio to make and save your own.
 - **Mobile first**: both the site and Studio are designed for phones first and scale up to tablet and desktop.
 - **House rule**: no em dashes anywhere. They are converted on save, in the editor as you type or paste, in every AI response, and again when pages render.
 

@@ -1,7 +1,7 @@
 // Builds a single-file preview of the public home page with example content.
-import { DEFAULT_SETTINGS } from '../src/settings';
+import { DEFAULT_SETTINGS, THEME_PRESETS } from '../src/settings';
 import { homeView, venturesView, writingView, postView, pageView, contactView } from '../src/views/public';
-import { themeCss } from '../src/views/layout';
+import { themeCss, themeToggle, THEME_BOOT } from '../src/views/layout';
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const s = structuredClone(DEFAULT_SETTINGS);
@@ -38,13 +38,17 @@ const css = readFileSync('public/site.css', 'utf8');
 const js = readFileSync('public/site.js', 'utf8');
 const progress = JSON.parse(readFileSync('scripts/progress.json', 'utf8')) as { done: string[]; doing: string[]; next: string[]; updated: string };
 const li = (cls: string, items: string[]) => items.map((x) => `<li class="${cls}">${x}</li>`).join('');
-const fams = 'family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,300..800&family=Schibsted+Grotesk:wght@400..700&family=Martian+Mono:wght@400;500';
+const fontSet = [...new Set(Object.values(THEME_PRESETS).flatMap((t) => [t.fontDisplay, t.fontBody, t.fontMono]))];
+const fams = fontSet.map((f) => 'family=' + (f === 'Bricolage Grotesque' ? 'Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,300..800' : f === 'Space Mono' ? 'Space+Mono:wght@400;700' : f.includes('Mono') ? f.replace(/ /g, '+') + ':wght@400;500' : f.replace(/ /g, '+') + ':wght@400;500;600;700')).join('&');
+const themeCssById: Record<string, string> = Object.fromEntries(Object.values(THEME_PRESETS).map((t) => [t.id, themeCss({ ...s.theme, ...t, preset: t.id })]));
 
 const html = `<title>Ganders.co Preview</title>
+${THEME_BOOT}
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?${fams}&display=swap">
-<style>${themeCss(s.theme)}
+<style id="pv-theme">${themeCss(s.theme)}</style>
+<style>
 ${css}
 :root{color-scheme:light}
 body{padding-left:0;padding-right:0}
@@ -70,11 +74,16 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .pv-card li.doing::before{content:"\\25CF";color:#B8860B}
 .pv-card li.next::before{content:"\\25CB";color:var(--muted)}
 .pv-card li.next{color:var(--muted)}
+.pv-themes{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.pv-themes button{display:flex;align-items:center;gap:6px;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;cursor:pointer;font-weight:600;font-size:.85rem;min-height:40px}
+.pv-themes button.on{border-color:var(--ink);box-shadow:2px 2px 0 var(--accent)}
+.pv-themes i{width:12px;height:12px;border-radius:50%;flex:none;border:1px solid rgba(0,0,0,.15)}
 </style>
 <div class="pv-bar"><span><b>Preview</b> with example content</span><span>Tap the menu to move between pages</span></div>
 <header class="masthead">
   <a class="brand" href="#home"><span class="brand-mark">MG</span><span class="brand-name">${s.site.name}</span></a>
   <nav class="nav" aria-label="Main">${s.nav.map((n) => `<a href="${n.href}">${n.label}</a>`).join('')}</nav>
+  ${themeToggle(s.theme)}
   <button class="nav-toggle" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')"><span></span><span></span></button>
 </header>
 <main id="main">${body}</main>
@@ -88,6 +97,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
   <div class="pv-card">
     <h3>Where things are</h3>
     <p>Updated ${progress.updated}</p>
+    <h4>Try a theme</h4><div class="pv-themes">${Object.values(THEME_PRESETS).map((t) => `<button type="button" data-theme-id="${t.id}" style="background:${t.light.paper};color:${t.light.ink};font-family:'${t.fontDisplay}'"><i style="background:${t.light.accent}"></i><i style="background:${t.dark.paper}"></i>${t.name}</button>`).join('')}</div>
     <h4>Done</h4><ul>${li('done', progress.done)}</ul>
     <h4>In progress</h4><ul>${li('doing', progress.doing)}</ul>
     <h4>Coming next</h4><ul>${li('next', progress.next)}</ul>
@@ -105,6 +115,11 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
     window.scrollTo(0,0);document.body.classList.remove('nav-open');
   }
   addEventListener('hashchange',show);show();
+  var css=${JSON.stringify(themeCssById)};
+  document.querySelectorAll('[data-theme-id]').forEach(function(b){b.addEventListener('click',function(){
+    document.getElementById('pv-theme').textContent=css[b.dataset.themeId];
+    document.querySelectorAll('[data-theme-id]').forEach(function(x){x.classList.toggle('on',x===b)});
+  })});
   var f=document.querySelector('form[data-contact]');
   if(f){
     var nf=f.cloneNode(true);f.parentNode.replaceChild(nf,f);

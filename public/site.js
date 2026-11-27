@@ -1,5 +1,27 @@
 (function(){
+  var root=document.documentElement;
   document.querySelectorAll('.nav a').forEach(function(a){a.addEventListener('click',function(){document.body.classList.remove('nav-open')})});
+
+  // Light and dark switch. Remembers the visitor's choice on this device.
+  var t=document.querySelector('.theme-toggle');
+  function isDark(){
+    if(root.dataset.theme)return root.dataset.theme==='dark';
+    var m=t&&t.dataset.mode;
+    if(m==='dark')return true;
+    if(m==='light')return false;
+    return matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+  function sync(){document.body.classList.toggle('theme-dark',isDark());if(t)t.setAttribute('aria-pressed',String(isDark()))}
+  if(t){
+    t.addEventListener('click',function(){
+      var next=isDark()?'light':'dark';root.dataset.theme=next;
+      try{localStorage.setItem('gco-theme',next)}catch(e){}
+      sync();
+    });
+    matchMedia('(prefers-color-scheme: dark)').addEventListener('change',sync);
+  }
+  sync();
+
   // Contact form: send without leaving the page (falls back to a normal post without JavaScript)
   var f=document.querySelector('form[data-contact]');
   if(!f||!window.fetch)return;

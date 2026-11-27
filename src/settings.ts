@@ -3,6 +3,19 @@ import type { Env } from './env';
 export interface NavItem { label: string; href: string; external?: boolean }
 export interface SocialLink { network: string; url: string }
 
+export interface Palette { paper: string; ink: string; muted: string; accent: string; onAccent: string; line: string }
+export interface ThemeDef {
+  id: string;
+  name: string;
+  description: string;
+  fontDisplay: string;
+  fontBody: string;
+  fontMono: string;
+  radius: number;
+  light: Palette;
+  dark: Palette;
+}
+
 export interface SiteSettings {
   site: {
     name: string;
@@ -17,18 +30,17 @@ export interface SiteSettings {
   };
   theme: {
     preset: string;
-    paper: string;
-    ink: string;
-    muted: string;
-    accent: string;
-    onAccent: string;
-    line: string;
+    mode: 'auto' | 'light' | 'dark';   // what visitors see first ('auto' follows their device)
+    toggle: boolean;                     // show the light/dark switch to visitors
     fontDisplay: string;
     fontBody: string;
     fontMono: string;
     radius: number;
     customCss: string;
+    light: Palette;
+    dark: Palette;
   };
+  themes: ThemeDef[];                    // your own saved themes
   home: {
     kicker: string;
     headline: string;
@@ -81,18 +93,17 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   },
   theme: {
     preset: 'kowhai',
-    paper: '#ECEEEA',
-    ink: '#111A22',
-    muted: '#5B6670',
-    accent: '#F2B825',
-    onAccent: '#111A22',
-    line: '#CDD3CF',
+    mode: 'auto',
+    toggle: true,
     fontDisplay: 'Bricolage Grotesque',
     fontBody: 'Schibsted Grotesk',
     fontMono: 'Martian Mono',
     radius: 3,
     customCss: '',
+    light: { paper: '#ECEEEA', ink: '#111A22', muted: '#5B6670', accent: '#F2B825', onAccent: '#111A22', line: '#CDD3CF' },
+    dark: { paper: '#101418', ink: '#E9EBE6', muted: '#9AA3AA', accent: '#F2B825', onAccent: '#101418', line: '#252C32' },
   },
+  themes: [],
   home: {
     kicker: 'Founder, operator, and the person behind a few good companies',
     headline: 'I build businesses that',
@@ -182,9 +193,46 @@ export async function saveSettings(env: Env, patch: Partial<SiteSettings>): Prom
   if (stmts.length) await env.DB.batch(stmts);
 }
 
-export const THEME_PRESETS: Record<string, Partial<SiteSettings['theme']>> = {
-  kowhai: { paper: '#ECEEEA', ink: '#111A22', muted: '#5B6670', accent: '#F2B825', onAccent: '#111A22', line: '#CDD3CF', fontDisplay: 'Bricolage Grotesque', fontBody: 'Schibsted Grotesk', fontMono: 'Martian Mono', radius: 3 },
-  basalt: { paper: '#121416', ink: '#E7E9E4', muted: '#8B9297', accent: '#9FD3C7', onAccent: '#121416', line: '#262A2E', fontDisplay: 'Bricolage Grotesque', fontBody: 'Schibsted Grotesk', fontMono: 'Martian Mono', radius: 3 },
-  pounamu: { paper: '#F2F4F1', ink: '#0D2620', muted: '#55665F', accent: '#2F7A5B', onAccent: '#F2F4F1', line: '#D3DBD6', fontDisplay: 'Syne', fontBody: 'Figtree', fontMono: 'DM Mono', radius: 8 },
-  signal: { paper: '#FFFFFF', ink: '#0B0B0C', muted: '#6E6E73', accent: '#2B44FF', onAccent: '#FFFFFF', line: '#E4E4E7', fontDisplay: 'Unbounded', fontBody: 'Hanken Grotesk', fontMono: 'Space Mono', radius: 0 },
+/** Built in themes. Each has a light and a dark palette so the visitor switch always looks designed. */
+export const THEME_PRESETS: Record<string, ThemeDef> = {
+  kowhai: {
+    id: 'kowhai', name: 'Kowhai', description: 'Cool stone, ink, and a bright kowhai yellow highlight. Confident and clean.',
+    fontDisplay: 'Bricolage Grotesque', fontBody: 'Schibsted Grotesk', fontMono: 'Martian Mono', radius: 3,
+    light: { paper: '#ECEEEA', ink: '#111A22', muted: '#5B6670', accent: '#F2B825', onAccent: '#111A22', line: '#CDD3CF' },
+    dark: { paper: '#101418', ink: '#E9EBE6', muted: '#9AA3AA', accent: '#F2B825', onAccent: '#101418', line: '#252C32' },
+  },
+  pounamu: {
+    id: 'pounamu', name: 'Pounamu', description: 'Greenstone greens with soft rounded corners. Calm and grounded.',
+    fontDisplay: 'Syne', fontBody: 'Figtree', fontMono: 'DM Mono', radius: 10,
+    light: { paper: '#F1F4F0', ink: '#0D2620', muted: '#53665E', accent: '#2F7A5B', onAccent: '#F1F4F0', line: '#D0DAD4' },
+    dark: { paper: '#0B1A16', ink: '#E3EDE7', muted: '#93A89F', accent: '#5FC79A', onAccent: '#0B1A16', line: '#1D302A' },
+  },
+  signal: {
+    id: 'signal', name: 'Signal', description: 'Swiss style white, black, and electric cobalt. Sharp corners, big type.',
+    fontDisplay: 'Unbounded', fontBody: 'Hanken Grotesk', fontMono: 'Space Mono', radius: 0,
+    light: { paper: '#FFFFFF', ink: '#0B0B0C', muted: '#6B6B70', accent: '#2B44FF', onAccent: '#FFFFFF', line: '#E4E4E7' },
+    dark: { paper: '#0A0A0C', ink: '#F4F4F5', muted: '#A1A1AA', accent: '#7C8CFF', onAccent: '#0A0A0C', line: '#232327' },
+  },
+  harbour: {
+    id: 'harbour', name: 'Harbour', description: 'Deep night navy with a sky blue glow. Made for dark mode first.',
+    fontDisplay: 'Space Grotesk', fontBody: 'Manrope', fontMono: 'IBM Plex Mono', radius: 6,
+    light: { paper: '#EEF2F6', ink: '#0E2235', muted: '#55687A', accent: '#1673C7', onAccent: '#FFFFFF', line: '#CFD9E3' },
+    dark: { paper: '#0B1826', ink: '#E6EEF5', muted: '#8FA3B6', accent: '#7FD1FF', onAccent: '#0B1826', line: '#1B2C3D' },
+  },
+  basalt: {
+    id: 'basalt', name: 'Basalt', description: 'Volcanic charcoal and mint with editorial serif headlines.',
+    fontDisplay: 'Newsreader', fontBody: 'Schibsted Grotesk', fontMono: 'Martian Mono', radius: 2,
+    light: { paper: '#F4F4F1', ink: '#161717', muted: '#61646A', accent: '#1E8C74', onAccent: '#FFFFFF', line: '#DCDDD8' },
+    dark: { paper: '#121314', ink: '#E7E9E4', muted: '#8B9297', accent: '#9FD3C7', onAccent: '#121314', line: '#26292C' },
+  },
 };
+
+/** Builds a dark palette from a light one, for custom themes. */
+export function darkFrom(l: Palette): Palette {
+  return { paper: mix(l.ink, '#000000', 0.25), ink: mix(l.paper, '#FFFFFF', 0.3), muted: mix(l.muted, '#FFFFFF', 0.4), accent: l.accent, onAccent: mix(l.ink, '#000000', 0.25), line: mix(l.ink, '#FFFFFF', 0.12) };
+}
+function mix(a: string, b: string, t: number): string {
+  const p = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const [x, y] = [p(a), p(b)];
+  return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, '0')).join('').toUpperCase();
+}

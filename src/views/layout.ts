@@ -14,13 +14,29 @@ function fontsHref(t: SiteSettings['theme']): string {
     if (f === 'Space Mono') return 'Space+Mono:wght@400;700';
     if (f === 'DM Mono') return 'DM+Mono:wght@400;500';
     if (f.includes('Mono')) return `${f.replace(/ /g, '+')}:wght@400;500`;
-    return `${f.replace(/ /g, '+')}:wght@300..700`;
+    return `${f.replace(/ /g, '+')}:wght@400;500;600;700`;
   };
   return `https://fonts.googleapis.com/css2?${fams.map((f) => 'family=' + spec(f)).join('&')}&display=swap`;
 }
 
+const pal = (p: any) => `--paper:${p.paper};--ink:${p.ink};--muted:${p.muted};--accent:${p.accent};--on-accent:${p.onAccent || p.paper};--line:${p.line};`;
+
+/** Light palette on :root, dark palette for [data-theme=dark] and for devices set to dark when the visitor has not chosen. */
 export function themeCss(t: SiteSettings['theme']): string {
-  return `:root{--paper:${t.paper};--ink:${t.ink};--muted:${t.muted};--accent:${t.accent};--on-accent:${t.onAccent || t.paper};--line:${t.line};--radius:${Number(t.radius) || 0}px;--f-display:'${t.fontDisplay}',system-ui,sans-serif;--f-body:'${t.fontBody}',system-ui,sans-serif;--f-mono:'${t.fontMono}',ui-monospace,monospace;}`;
+  const light = t.light || (t as any);
+  const dark = t.dark || light;
+  const base = `--radius:${Number(t.radius) || 0}px;--f-display:'${t.fontDisplay}',system-ui,sans-serif;--f-body:'${t.fontBody}',system-ui,sans-serif;--f-mono:'${t.fontMono}',ui-monospace,monospace;`;
+  const first = t.mode === 'dark' ? dark : light;
+  const auto = t.mode === 'auto' ? `@media (prefers-color-scheme:dark){:root:not([data-theme=light]){${pal(dark)}color-scheme:dark}}` : '';
+  return `:root{${base}${pal(first)}color-scheme:${t.mode === 'dark' ? 'dark' : 'light'}}${auto}:root[data-theme=light]{${pal(light)}color-scheme:light}:root[data-theme=dark]{${pal(dark)}color-scheme:dark}`;
+}
+
+/** Runs before paint so a visitor's saved choice never flashes the wrong theme. */
+export const THEME_BOOT = `<script>try{var m=localStorage.getItem('gco-theme');if(m==='light'||m==='dark')document.documentElement.dataset.theme=m}catch(e){}</script>`;
+
+export function themeToggle(t: SiteSettings['theme']): string {
+  if (t.toggle === false) return '';
+  return `<button class="theme-toggle" type="button" aria-label="Switch between light and dark" data-mode="${t.mode}"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path class="sun" d="M12 4V2M12 22v-2M4 12H2M22 12h-2M5.6 5.6 4.2 4.2M19.8 19.8l-1.4-1.4M5.6 18.4l-1.4 1.4M19.8 4.2l-1.4 1.4M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path class="moon" d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></button>`;
 }
 
 export interface LayoutOpts {
@@ -54,6 +70,9 @@ export function layout(s: SiteSettings, o: LayoutOpts, siteUrl: string): string 
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+${THEME_BOOT}
+<meta name="theme-color" content="${esc((s.theme.light || (s.theme as any)).paper)}" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="${esc((s.theme.dark || (s.theme as any)).paper)}" media="(prefers-color-scheme: dark)">
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(desc)}">
 <link rel="icon" href="${esc(fav)}">
@@ -76,6 +95,7 @@ ${o.extraHead || ''}
     ${logo ? `<img src="${esc(logo)}" alt="${esc(s.site.name)}">` : `<span class="brand-mark">${esc(initials(s.site.name))}</span><span class="brand-name">${esc(s.site.name)}</span>`}
   </a>
   <nav class="nav" aria-label="Main">${nav}</nav>
+  ${themeToggle(s.theme)}
   <button class="nav-toggle" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')"><span></span><span></span></button>
 </header>
 <main id="main">${o.body}</main>
