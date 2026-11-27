@@ -105,8 +105,8 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     preset: 'kowhai',
     mode: 'auto',
     toggle: true,
-    fontDisplay: 'Bricolage Grotesque',
-    fontBody: 'Schibsted Grotesk',
+    fontDisplay: 'Montserrat',
+    fontBody: 'Montserrat',
     fontMono: 'Martian Mono',
     radius: 3,
     customCss: '',
@@ -213,7 +213,7 @@ export async function saveSettings(env: Env, patch: Partial<SiteSettings>): Prom
 export const THEME_PRESETS: Record<string, ThemeDef> = {
   kowhai: {
     id: 'kowhai', name: 'Kowhai', description: 'Cool stone, ink, and a bright kowhai yellow highlight. Confident and clean.',
-    fontDisplay: 'Bricolage Grotesque', fontBody: 'Schibsted Grotesk', fontMono: 'Martian Mono', radius: 3,
+    fontDisplay: 'Montserrat', fontBody: 'Montserrat', fontMono: 'Martian Mono', radius: 3,
     light: { paper: '#ECEEEA', ink: '#111A22', muted: '#5B6670', accent: '#F2B825', onAccent: '#111A22', line: '#CDD3CF' },
     dark: { paper: '#101418', ink: '#E9EBE6', muted: '#9AA3AA', accent: '#F2B825', onAccent: '#101418', line: '#252C32' },
   },
