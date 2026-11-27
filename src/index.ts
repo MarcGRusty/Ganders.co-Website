@@ -34,6 +34,7 @@ app.route('/api', api);
 
 // Media from R2
 app.get('/media/:key{.+}', async (c) => {
+  if (!c.env.MEDIA) return c.notFound();
   const obj = await c.env.MEDIA.get(c.req.param('key'));
   if (!obj) return c.notFound();
   const h = new Headers();

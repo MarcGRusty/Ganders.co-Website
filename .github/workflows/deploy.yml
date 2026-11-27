@@ -41,7 +41,14 @@ jobs:
             ID=$(npx wrangler d1 list --json | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).find(d=>d.name==="ganders-co").uuid))')
           fi
           sed -i "s/REPLACE_WITH_YOUR_D1_ID/$ID/" wrangler.jsonc
-          npx wrangler r2 bucket create ganders-co-media || true
+          if npx wrangler r2 bucket list 2>/dev/null | grep -q "ganders-co-media"; then
+            echo "R2 bucket ready"
+          elif npx wrangler r2 bucket create ganders-co-media; then
+            echo "R2 bucket created"
+          else
+            echo "::warning::R2 is not enabled on this Cloudflare account yet. Deploying without media uploads. Enable R2 in the Cloudflare dashboard and re-run."
+            node -e 'const fs=require("fs");let s=fs.readFileSync("wrangler.jsonc","utf8");s=s.replace(/"r2_buckets":\s*\[[^\]]*\],\s*/,"");fs.writeFileSync("wrangler.jsonc",s)'
+          fi
 
       - name: Apply database migrations
         run: npx wrangler d1 migrations apply ganders-co --remote

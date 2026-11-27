@@ -218,7 +218,7 @@ a.post('/admin/media', async (c) => {
 a.delete('/admin/media/:key{.+}', async (c) => {
   need(c, 'media.delete');
   const key = c.req.param('key');
-  await c.env.MEDIA.delete(key);
+  await c.env.MEDIA?.delete(key);
   await c.env.DB.prepare('DELETE FROM media WHERE key = ?').bind(key).run();
   return c.json({ ok: true });
 });
@@ -228,6 +228,7 @@ async function storeMedia(env: Env, name: string, type: string, data: ArrayBuffe
   const base = slugify(name.replace(/\.[^.]+$/, '')).slice(0, 40);
   const key = `${new Date().toISOString().slice(0, 7)}/${base}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
   const size = typeof data === 'string' ? new TextEncoder().encode(data).length : data.byteLength;
+  if (!env.MEDIA) throw new Error('Media storage is not switched on yet. Enable R2 in Cloudflare, then redeploy.');
   await env.MEDIA.put(key, data, { httpMetadata: { contentType: type } });
   await env.DB.prepare('INSERT INTO media (key, name, type, size, alt) VALUES (?, ?, ?, ?, ?)').bind(key, name, type, size, alt).run();
   return key;
