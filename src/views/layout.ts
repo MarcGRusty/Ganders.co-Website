@@ -42,7 +42,7 @@ export function layout(s: SiteSettings, o: LayoutOpts, siteUrl: string): string 
   const nav = s.nav
     .map((n) => {
       const href = safeUrl(n.href);
-      const active = href !== '/' && o.path.startsWith(href) ? ' aria-current="page"' : '';
+      const active = (href === '/' ? o.path === '/' : o.path.startsWith(href)) ? ' aria-current="page"' : '';
       const ext = n.external ? ' target="_blank" rel="noopener"' : '';
       return `<a href="${esc(href)}"${active}${ext}>${esc(n.label)}</a>`;
     })

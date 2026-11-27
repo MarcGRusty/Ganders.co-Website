@@ -17,6 +17,7 @@ export interface Env {
   LINKEDIN_TOKEN?: string;
   LINKEDIN_AUTHOR_URN?: string;
   SOCIAL_WEBHOOK_URL?: string;
+  CONTACT_WEBHOOK_URL?: string; // optional: forward contact messages (Zapier, Make, Slack, email service)
   [key: string]: unknown;
 }
 export type AppEnv = { Bindings: Env };

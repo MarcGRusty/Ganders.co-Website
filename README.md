@@ -2,7 +2,7 @@
 
 The personal and entrepreneurial site for Marc Gander, with its own CMS ("Studio") built in. It runs entirely on Cloudflare Workers: pages are rendered live from the database on every request, so nothing is a static export.
 
-- **Public site**: home, ventures (each opens in a new tab), writing, any number of CMS pages, RSS feed, sitemap.
+- **Public site**: separate pages for Home, About, Ventures (each business opens in a new tab), Writing, and Contact (a form that lands in the Studio Inbox), plus any number of extra CMS pages, an RSS feed, and a sitemap.
 - **Studio** at `/admin`: WYSIWYG editor for posts and pages, ventures, design (logo, favicon, colours, fonts, home page layout, menu), media library, knowledge base, AI ideas and drafts, modules, social sharing, and API connections.
 - **Mobile first**: both the site and Studio are designed for phones first and scale up to tablet and desktop.
 - **House rule**: no em dashes anywhere. They are converted on save, in the editor as you type or paste, in every AI response, and again when pages render.
@@ -74,6 +74,10 @@ npm run dev                      # http://127.0.0.1:8787 and /admin
 | Instagram Business | `META_IG_USER_ID`, `META_PAGE_TOKEN` (needs `instagram_content_publish`; posts need a cover image) |
 | LinkedIn | `LINKEDIN_TOKEN`, `LINKEDIN_AUTHOR_URN` (for example `urn:li:person:abc123`) |
 | X, Threads, TikTok, anything else | `SOCIAL_WEBHOOK_URL`, a Zapier, Make, or Buffer webhook that receives `{ network, caption, link, image }` |
+
+### Contact messages
+
+Messages from the Contact page are stored in D1 and shown in the Studio Inbox. To also forward them to email, Slack, or a CRM, set `CONTACT_WEBHOOK_URL` to a Zapier or Make webhook.
 
 ### API connections
 

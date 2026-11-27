@@ -1,6 +1,6 @@
 {
   "updated": "27 Nov 2026",
-  "done": ["Plan and visual direction", "Mobile first public site: home, ventures, writing, pages, feed, sitemap", "Studio admin with WYSIWYG editor, works on your phone", "Ventures, design, menu, media library", "AI layer: Claude, ChatGPT, Grok, Gemini, OpenRouter with Auto mode", "Knowledge base and Create Ideas into reviewable drafts", "AI logos, favicons and modules", "Social sharing and API connections", "Code in GitHub (draft pull request #1)"],
+  "done": ["Multi page site: Home, About, Ventures, Writing, Contact, plus any pages you add", "Contact page with a form that lands in an Inbox in the admin", "Mobile first public site", "Studio admin with WYSIWYG editor, works on your phone", "AI layer: Claude, ChatGPT, Grok, Gemini, OpenRouter with Auto mode", "Knowledge base and Create Ideas into reviewable drafts", "AI logos, favicons and modules", "Social sharing and API connections", "Code in GitHub (draft pull request #1)"],
   "doing": ["Waiting on your story, ventures, and photos"],
   "next": ["Connect Cloudflare and go live on a workers.dev address", "Add your AI keys and social accounts", "Point ganders.co at the Worker"]
 }

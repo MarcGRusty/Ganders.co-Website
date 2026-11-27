@@ -143,6 +143,39 @@ main{max-width:1240px;margin:0 auto;padding:0 16px}
 .mail{display:inline-flex;gap:10px;align-items:baseline;font-family:var(--f-display);font-weight:600;font-size:clamp(1.4rem,7vw,3.2rem);letter-spacing:-.035em;text-decoration:none;border-bottom:5px solid var(--accent);padding-bottom:4px;overflow-wrap:anywhere;transition:gap .3s}
 .mail:hover{gap:18px}
 
+
+/* Contact page */
+.contact-page{padding-bottom:64px}
+.contact-grid{display:grid;gap:40px}
+.cform{display:flex;flex-direction:column;gap:18px;min-width:0}
+.cf-row{display:grid;gap:18px}
+.cf{display:flex;flex-direction:column;gap:8px;border:0;padding:0;margin:0;min-width:0}
+.cf>span,.cf legend{font-weight:600;font-size:.95rem;padding:0}
+.cf em{font-style:normal;color:var(--muted);font-weight:400}
+.cf input,.cf textarea{width:100%;font:inherit;font-size:16px;color:var(--ink);background:color-mix(in srgb,var(--paper) 60%,#fff);border:1.5px solid var(--line);border-radius:var(--radius);padding:13px 14px;min-height:50px;transition:border-color .2s,box-shadow .2s}
+.cf textarea{resize:vertical;min-height:150px;line-height:1.55}
+.cf input:focus,.cf textarea:focus{outline:none;border-color:var(--ink);box-shadow:4px 4px 0 var(--accent)}
+.topics legend{margin-bottom:10px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{position:relative;cursor:pointer}
+.chip input{position:absolute;opacity:0;inset:0;cursor:pointer}
+.chip span{display:inline-flex;align-items:center;min-height:42px;padding:8px 14px;border:1.5px solid var(--line);border-radius:999px;font-size:.92rem;transition:background .2s,border-color .2s}
+.chip input:checked+span{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.chip input:focus-visible+span{outline:3px solid var(--accent);outline-offset:2px}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.cform .btn{align-self:stretch;cursor:pointer;font:inherit;font-weight:600}
+.cform .btn[disabled]{opacity:.6;cursor:progress}
+.cf-status{margin:0;min-height:1.5em;font-weight:500}
+.cf-status.ok{padding:14px 16px;background:var(--accent);color:var(--on-accent);border-radius:var(--radius)}
+.cf-status.err{color:#B3261E}
+.contact-side{display:flex;flex-direction:column;gap:22px;padding-top:24px;border-top:2px solid var(--ink)}
+.cs-block{display:flex;flex-direction:column;gap:6px}
+.cs-block .mono{color:var(--muted)}
+.cs-block a,.cs-block p{margin:0;font-size:1.05rem;overflow-wrap:anywhere}
+.cs-block a{text-decoration-color:var(--accent);text-decoration-thickness:3px;text-underline-offset:4px}
+.cs-block ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.cs-block.notes p{font-size:.95rem;color:var(--muted)}
+
 /* Footer */
 .foot{border-top:1px solid var(--line)}
 .foot-inner{max-width:1240px;margin:0 auto;padding:32px 16px 40px;display:grid;gap:18px}
@@ -167,6 +200,8 @@ main{max-width:1240px;margin:0 auto;padding:0 16px}
   .posts a{display:grid;grid-template-columns:150px 1fr;gap:6px 24px;align-items:baseline;padding:26px 0}
   .p-title,.p-ex{grid-column:2}
   .venture a::before{inset:0 -32px}
+  .cf-row{grid-template-columns:1fr 1fr}
+  .cform .btn{align-self:flex-start}
   .portrait{width:150px}
 }
 
@@ -198,6 +233,8 @@ main{max-width:1240px;margin:0 auto;padding:0 16px}
   .prose h2{font-size:2rem}
   .page-head,.a-head{padding:clamp(80px,9vw,120px) 0 40px}
   .contact{padding:clamp(100px,12vw,160px) 0}
+  .contact-grid{grid-template-columns:minmax(0,7fr) minmax(0,4fr);gap:clamp(48px,6vw,96px);align-items:start}
+  .contact-side{position:sticky;top:110px}
   .foot-inner{grid-template-columns:1fr auto;align-items:center;gap:18px 32px}
   .foot-meta{grid-column:1/-1}
 }

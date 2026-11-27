@@ -90,12 +90,12 @@ export function Design() {
   async function save() {
     setBusy(true);
     try {
-      const r = await api('/admin/settings', { method: 'PUT', body: { site: s.site, theme: s.theme, home: s.home, nav: s.nav, social: s.social, seo: s.seo } });
+      const r = await api('/admin/settings', { method: 'PUT', body: { site: s.site, theme: s.theme, home: s.home, contact: s.contact, nav: s.nav, social: s.social, seo: s.seo } });
       setData({ ...data, settings: r.settings });
       toast.ok('Saved. Changes are live.');
     } catch (e) { toast.err(e); } finally { setBusy(false); }
   }
-  const tabs: [string, string][] = [['identity', 'Identity'], ['theme', 'Colours and type'], ['home', 'Home page'], ['menu', 'Menu and links'], ['seo', 'Search']];
+  const tabs: [string, string][] = [['identity', 'Identity'], ['theme', 'Colours and type'], ['home', 'Home page'], ['contact', 'Contact page'], ['menu', 'Menu and links'], ['seo', 'Search']];
   return (
     <div class="view">
       <Head title="Design" sub="Everything visitors see. Save, then refresh the site to check it.">
@@ -196,6 +196,22 @@ export function Design() {
             <Field label="Writing title" value={s.home.writingTitle} onInput={upd('home', 'writingTitle')} />
             <Field label="Contact title" value={s.home.contactTitle} onInput={upd('home', 'contactTitle')} />
             <Area label="Contact text" rows={2} value={s.home.contactBody} onInput={upd('home', 'contactBody')} />
+          </Card>
+        </div>
+      )}
+
+      {tab === 'contact' && (
+        <div class="grid2">
+          <Card title="Contact page">
+            <Field label="Headline" value={s.contact.title} onInput={upd('contact', 'title')} />
+            <Area label="Intro" rows={3} value={s.contact.intro} onInput={upd('contact', 'intro')} />
+            <Area label="Topics people can pick (one per line)" rows={5} value={s.contact.topics.join('\n')} onInput={(v) => upd('contact', 'topics')(v.split('\n').filter((x) => x.trim()))} />
+            <Area label="Message after sending" rows={2} value={s.contact.success} onInput={upd('contact', 'success')} />
+          </Card>
+          <Card title="Side panel">
+            <Toggle label="Show my email address" checked={s.contact.showEmail} onChange={upd('contact', 'showEmail')} />
+            <Area label="Notes (one per line)" rows={4} value={s.contact.notes.join('\n')} onInput={(v) => upd('contact', 'notes')(v.split('\n').filter((x) => x.trim()))} />
+            <p class="muted small">Messages land in your Inbox. To also get them by email or Slack, set CONTACT_WEBHOOK_URL (see the README).</p>
           </Card>
         </div>
       )}

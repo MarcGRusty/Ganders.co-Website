@@ -1,16 +1,12 @@
 // Builds a single-file preview of the public home page with example content.
 import { DEFAULT_SETTINGS } from '../src/settings';
-import { homeView } from '../src/views/public';
+import { homeView, venturesView, writingView, postView, pageView, contactView } from '../src/views/public';
 import { themeCss } from '../src/views/layout';
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const s = structuredClone(DEFAULT_SETTINGS);
-s.nav = [
-  { label: 'Ventures', href: '#ventures' },
-  { label: 'Writing', href: '#writing' },
-  { label: 'Story', href: '#story' },
-  { label: 'Contact', href: '#contact' },
-];
+s.nav = s.nav.map((n) => ({ ...n, href: n.href === '/' ? '#home' : '#' + n.href.replace(/^\//, '') }));
+s.social = [{ network: 'LinkedIn', url: 'https://linkedin.com' }, { network: 'Instagram', url: 'https://instagram.com' }];
 const ventures = [
   { id: 1, name: 'Example Venture', url: 'https://ganders.co', tagline: 'Your first business goes here, with one line on what it does.', description: 'A short description that tells a visitor why this company exists and who it helps.', role: 'Founder', since: '2019', logo: '', accent: '' },
   { id: 2, name: 'Second Company', url: 'https://ganders.co', tagline: 'Each venture gets its own colour when someone hovers over it.', description: 'Clicking any of these opens the business in a new tab.', role: 'Co-founder', since: '2022', logo: '', accent: '#9FD3C7' },
@@ -21,7 +17,23 @@ const posts = [
   { id: 2, slug: 'b', title: 'The boring systems that keep a small company alive', excerpt: 'Example post written by hand in the editor.', content_html: '', cover: '', tags: '', published_at: '2026-11-08' },
   { id: 3, slug: 'c', title: 'Why I build in New Zealand', excerpt: 'Example post. Your knowledge base shapes the ideas the AI suggests.', content_html: '', cover: '', tags: '', published_at: '2026-10-29' },
 ];
-const body = homeView(s, ventures as any, posts as any);
+const aboutHtml = `<p>This is your About page, a full page of its own. It tells the longer story that the home page only hints at.</p><h2>Where I started</h2><p>Example text. The first job, the first business, and the moment it clicked. Your real story replaces this once you send it through.</p><blockquote>The best businesses I have built started as a problem I was tired of living with.</blockquote><h2>What I am building now</h2><p>Example text. A short tour of the ventures and why each one exists, with links across to the Ventures page.</p><h2>What I care about</h2><ul><li>Building things that last longer than the hype cycle</li><li>Backing people who do the work</li><li>Staying close to customers</li></ul>`;
+const samplePost = `<p>Example post body. Everything here is written in the editor, either by you or as an AI draft you review first.</p><h2>The trap</h2><p>Most founders hire for the thing they hate doing. That is usually sales. The first hire that actually changed things for me was an operator.</p><blockquote>Hire for the work that keeps you up at night, not the work you avoid.</blockquote><h2>What I do now</h2><p>Example text continues here.</p>`;
+const fix = (html: string) => html
+  .replace(/href="\/writing\/[^"]*"/g, 'href="#post"')
+  .replace(/href="\/(ventures|writing|about|contact)"/g, 'href="#$1"')
+  .replace(/href="\/writing\?tag=[^"]*"/g, 'href="#writing"')
+  .replace(/href="#(ventures|contact)"/g, 'href="#$1"')
+  .replace(/href="\/"/g, 'href="#home"');
+const views: Record<string, string> = {
+  home: homeView(s, ventures as any, posts as any),
+  about: pageView({ slug: 'about', title: 'About', summary: 'The longer version of who I am and why I build.', content_html: aboutHtml, template: 'standard' }, aboutHtml),
+  ventures: venturesView(s, ventures as any),
+  writing: writingView(s, posts as any),
+  post: postView({ ...(posts[0] as any), tags: 'hiring, operations' }, samplePost),
+  contact: contactView(s),
+};
+const body = Object.entries(views).map(([k, v]) => `<div class="pv-view" data-view="${k}"${k === 'home' ? '' : ' hidden'}>${fix(v)}</div>`).join('\n');
 const css = readFileSync('public/site.css', 'utf8');
 const js = readFileSync('public/site.js', 'utf8');
 const progress = JSON.parse(readFileSync('scripts/progress.json', 'utf8')) as { done: string[]; doing: string[]; next: string[]; updated: string };
@@ -59,9 +71,9 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .pv-card li.next::before{content:"\\25CB";color:var(--muted)}
 .pv-card li.next{color:var(--muted)}
 </style>
-<div class="pv-bar"><span><b>Preview</b> with example content</span><span>Your story, ventures, and photos replace it once you send them</span></div>
+<div class="pv-bar"><span><b>Preview</b> with example content</span><span>Tap the menu to move between pages</span></div>
 <header class="masthead">
-  <a class="brand" href="#main"><span class="brand-mark">MG</span><span class="brand-name">${s.site.name}</span></a>
+  <a class="brand" href="#home"><span class="brand-mark">MG</span><span class="brand-name">${s.site.name}</span></a>
   <nav class="nav" aria-label="Main">${s.nav.map((n) => `<a href="${n.href}">${n.label}</a>`).join('')}</nav>
   <button class="nav-toggle" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')"><span></span><span></span></button>
 </header>
@@ -81,6 +93,24 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
     <h4>Coming next</h4><ul>${li('next', progress.next)}</ul>
   </div>
 </details>
-<script>${js}</script>`;
+<script>${js}</script>
+<script>
+(function(){
+  var views=[].slice.call(document.querySelectorAll('.pv-view'));
+  var map={home:'home',about:'about',ventures:'ventures',writing:'writing',post:'writing',contact:'contact'};
+  function show(){
+    var k=(location.hash||'#home').slice(1);if(!views.some(function(v){return v.dataset.view===k}))k='home';
+    views.forEach(function(v){v.hidden=v.dataset.view!==k});
+    document.querySelectorAll('.nav a').forEach(function(a){a.toggleAttribute('aria-current',a.getAttribute('href')==='#'+map[k])});
+    window.scrollTo(0,0);document.body.classList.remove('nav-open');
+  }
+  addEventListener('hashchange',show);show();
+  var f=document.querySelector('form[data-contact]');
+  if(f){
+    var nf=f.cloneNode(true);f.parentNode.replaceChild(nf,f);
+    nf.addEventListener('submit',function(e){e.preventDefault();var st=nf.querySelector('.cf-status');st.className='cf-status ok';st.textContent='Preview only: on the live site this lands in your Inbox in the admin area.';nf.reset();});
+  }
+})();
+</script>`;
 writeFileSync(process.argv[2] || 'preview.html', html.replace(/mailto:[^"]*/g, '#contact'));
 console.log('ok', html.length);

@@ -16,9 +16,9 @@ export function Dashboard() {
       <Head title="Kia ora, Marc" sub="Here is where the site stands today." />
       <div class="stats">
         <a class="stat" href="#/posts"><span>{c.published}</span>Live posts</a>
-        <a class="stat hot" href="#/posts"><span>{c.drafts}</span>Drafts to review</a>
+        <a class="stat" href="#/posts"><span>{c.drafts}</span>Drafts to review</a>
         <a class="stat" href="#/ideas"><span>{c.ideas}</span>Fresh ideas</a>
-        <a class="stat" href="#/ventures"><span>{c.ventures}</span>Ventures</a>
+        <a class={`stat${c.messages ? ' hot' : ''}`} href="#/inbox"><span>{c.messages}</span>New messages</a>
       </div>
       <div class="grid2">
         <Card title="Quick actions">
@@ -262,7 +262,7 @@ export function Pages() {
   const [aiOpen, setAiOpen] = useState(false);
   return (
     <div class="view">
-      <Head title="Pages" sub="Standalone pages like About, Speaking, or Press. Add them to the menu under Design.">
+      <Head title="Pages" sub="Home, Contact, Ventures and Writing are built in. Add as many other pages as you like (About, Speaking, Press) and put them in the menu under Design.">
         <Btn kind="ghost" onClick={() => setAiOpen(true)}>Draft a page with AI</Btn>
         <Btn onClick={() => go('/pages/new')}>New page</Btn>
       </Head>

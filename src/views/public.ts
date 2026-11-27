@@ -87,7 +87,7 @@ export function homeView(s: SiteSettings, ventures: Business[], posts: PostRow[]
     contact: () => `<section class="contact reveal" id="contact">
   <h2 class="display sm">${esc(h.contactTitle)}</h2>
   <p class="lede">${esc(h.contactBody)}</p>
-  ${s.site.email ? `<a class="mail" href="mailto:${esc(s.site.email)}">${esc(s.site.email)}<span aria-hidden="true">&#8599;</span></a>` : ''}
+  <a class="mail" href="/contact">Send me a message<span aria-hidden="true">&rarr;</span></a>
 </section>`,
   };
   return noEmDash(h.sections.map((k) => blocks[k]?.() ?? '').join('\n'));
@@ -128,4 +128,35 @@ export function pageView(p: PageRow, html: string): string {
 
 export function notFoundView(): string {
   return `<section class="page-head center"><p class="kicker mono">404</p><h1 class="display md">This page wandered off.</h1><p class="lede">It might have moved, or it never existed. Start again from <a href="/">the home page</a>.</p></section>`;
+}
+
+export function contactView(s: SiteSettings, sent = false): string {
+  const c = s.contact;
+  return `<section class="contact-page">
+  <header class="page-head">
+    <p class="kicker mono"><span class="dot"></span>Contact</p>
+    <h1 class="display md">${esc(c.title)}</h1>
+    <p class="lede">${esc(c.intro)}</p>
+  </header>
+  <div class="contact-grid">
+    <form class="cform" method="post" action="/contact" data-contact>
+      <div class="cf-row">
+        <label class="cf"><span>Your name</span><input name="name" required autocomplete="name" maxlength="120"></label>
+        <label class="cf"><span>Email</span><input name="email" type="email" required autocomplete="email" maxlength="200"></label>
+      </div>
+      <label class="cf"><span>Company <em>(optional)</em></span><input name="company" autocomplete="organization" maxlength="160"></label>
+      ${c.topics.length ? `<fieldset class="cf topics"><legend>What is it about?</legend><div class="chips">${c.topics.map((t, i) => `<label class="chip"><input type="radio" name="topic" value="${esc(t)}"${i === 0 ? ' checked' : ''}><span>${esc(t)}</span></label>`).join('')}</div></fieldset>` : ''}
+      <label class="cf"><span>Message</span><textarea name="body" rows="6" required maxlength="5000"></textarea></label>
+      <label class="hp" aria-hidden="true">Leave this empty<input name="website" tabindex="-1" autocomplete="off"></label>
+      <button class="btn" type="submit">Send message</button>
+      <p class="cf-status" role="status" aria-live="polite">${sent ? esc(c.success) : ''}</p>
+    </form>
+    <aside class="contact-side">
+      ${c.showEmail && s.site.email ? `<div class="cs-block"><span class="mono">Email</span><a href="mailto:${esc(s.site.email)}">${esc(s.site.email)}</a></div>` : ''}
+      ${s.site.location ? `<div class="cs-block"><span class="mono">Based in</span><p>${esc(s.site.location)}</p></div>` : ''}
+      ${s.social.filter((x) => x.url).length ? `<div class="cs-block"><span class="mono">Elsewhere</span><ul>${s.social.filter((x) => x.url).map((x) => `<li><a href="${esc(safeUrl(x.url))}" target="_blank" rel="noopener">${esc(x.network)} &#8599;</a></li>`).join('')}</ul></div>` : ''}
+      ${c.notes.length ? `<div class="cs-block notes">${c.notes.map((n) => `<p>${esc(n)}</p>`).join('')}</div>` : ''}
+    </aside>
+  </div>
+</section>`;
 }

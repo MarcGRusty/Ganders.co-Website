@@ -45,6 +45,7 @@ const TABLES: Record<string, Table> = {
   kb: { name: 'kb_entries', order: 'kind, updated_at DESC', cols: ['title', 'body', 'kind', 'tags', 'use_for_ideas'], prepare: (r) => ({ ...r, updated_at: now() }) },
   modules: { name: 'modules', order: 'updated_at DESC', cols: ['slug', 'name', 'description', 'html', 'css', 'js', 'enabled'], prepare: (r) => ({ ...r, ...slugOf({ slug: r.slug, title: r.name }), updated_at: now() }) },
   integrations: { name: 'integrations', order: 'name', cols: ['name', 'kind', 'base_url', 'auth_header', 'secret_name', 'notes', 'enabled'] },
+  messages: { name: 'messages', order: "CASE status WHEN 'new' THEN 0 WHEN 'read' THEN 1 ELSE 2 END, created_at DESC", cols: ['status'] },
   ideas: { name: 'ideas', order: "CASE status WHEN 'new' THEN 0 ELSE 1 END, created_at DESC", cols: ['title', 'angle', 'outline', 'channel', 'status', 'provider', 'post_id'] },
 };
 /** Only touch the slug when the request includes a slug or a title, so partial updates keep it. */
@@ -57,20 +58,20 @@ function pick(t: Table, body: any, extra: string[] = []) {
   return out;
 }
 
-a.get('/admin/:t{pages|posts|businesses|kb|modules|integrations|ideas}', async (c) => {
+a.get('/admin/:t{pages|posts|businesses|kb|modules|integrations|ideas|messages}', async (c) => {
   const t = TABLES[c.req.param('t')];
   const light = t.name === 'posts' || t.name === 'pages' ? 'id, slug, title, status, updated_at' + (t.name === 'posts' ? ', source, excerpt, published_at, ai_provider' : '') : '*';
   const rows = await c.env.DB.prepare(`SELECT ${light} FROM ${t.name} ORDER BY ${t.order}`).all();
   return c.json(rows.results);
 });
 
-a.get('/admin/:t{pages|posts|businesses|kb|modules|integrations|ideas}/:id{[0-9]+}', async (c) => {
+a.get('/admin/:t{pages|posts|businesses|kb|modules|integrations|ideas|messages}/:id{[0-9]+}', async (c) => {
   const t = TABLES[c.req.param('t')];
   const row = await c.env.DB.prepare(`SELECT * FROM ${t.name} WHERE id = ?`).bind(c.req.param('id')).first();
   return row ? c.json(row) : c.json({ error: 'Not found' }, 404);
 });
 
-a.post('/admin/:t{pages|posts|businesses|kb|modules|integrations|ideas}', async (c) => {
+a.post('/admin/:t{pages|posts|businesses|kb|modules|integrations|ideas|messages}', async (c) => {
   const t = TABLES[c.req.param('t')];
   let body = await c.req.json();
   if (t.prepare) body = await t.prepare(body, c.env);
@@ -81,7 +82,7 @@ a.post('/admin/:t{pages|posts|businesses|kb|modules|integrations|ideas}', async 
   return c.json(res);
 });
 
-a.put('/admin/:t{pages|posts|businesses|kb|modules|integrations|ideas}/:id{[0-9]+}', async (c) => {
+a.put('/admin/:t{pages|posts|businesses|kb|modules|integrations|ideas|messages}/:id{[0-9]+}', async (c) => {
   const t = TABLES[c.req.param('t')];
   const id = Number(c.req.param('id'));
   let body = await c.req.json();
@@ -95,7 +96,7 @@ a.put('/admin/:t{pages|posts|businesses|kb|modules|integrations|ideas}/:id{[0-9]
   return c.json(res);
 });
 
-a.delete('/admin/:t{pages|posts|businesses|kb|modules|integrations|ideas}/:id{[0-9]+}', async (c) => {
+a.delete('/admin/:t{pages|posts|businesses|kb|modules|integrations|ideas|messages}/:id{[0-9]+}', async (c) => {
   const t = TABLES[c.req.param('t')];
   await c.env.DB.prepare(`DELETE FROM ${t.name} WHERE id = ?`).bind(c.req.param('id')).run();
   return c.json({ ok: true });
@@ -134,7 +135,8 @@ a.get('/admin/overview', async (c) => {
       (SELECT COUNT(*) FROM pages) AS pages,
       (SELECT COUNT(*) FROM businesses WHERE active=1) AS ventures,
       (SELECT COUNT(*) FROM kb_entries) AS kb,
-      (SELECT COUNT(*) FROM media) AS media`).first(),
+      (SELECT COUNT(*) FROM media) AS media,
+      (SELECT COUNT(*) FROM messages WHERE status='new') AS messages`).first(),
     db.prepare('SELECT task, provider, model, ok, ms, error, created_at FROM ai_log ORDER BY id DESC LIMIT 8').all(),
   ]);
   return c.json({ counts, ai: aiStatus(c.env), social: socialStatus(c.env), recentAi: recentAi.results });

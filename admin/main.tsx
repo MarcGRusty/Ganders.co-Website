@@ -5,16 +5,17 @@ import { Btn, Spinner, Toasts, toast } from './ui';
 import { useRoute } from './router';
 import { Dashboard, Posts, PostEdit, Ideas, Pages, PageEdit } from './views/content';
 import { Ventures, Design, Media } from './views/site';
+import { Inbox } from './views/inbox';
 import { Knowledge, AiSettings, Modules, Integrations, Social } from './views/system';
 
 const NAV: { group: string; items: [string, string][] }[] = [
-  { group: 'Content', items: [['dashboard', 'Home'], ['posts', 'Posts'], ['ideas', 'Ideas'], ['pages', 'Pages'], ['ventures', 'Ventures']] },
+  { group: 'Content', items: [['dashboard', 'Home'], ['inbox', 'Inbox'], ['posts', 'Posts'], ['ideas', 'Ideas'], ['pages', 'Pages'], ['ventures', 'Ventures']] },
   { group: 'Brain', items: [['knowledge', 'Knowledge base'], ['ai', 'AI']] },
   { group: 'Site', items: [['design', 'Design'], ['media', 'Media'], ['modules', 'Modules']] },
   { group: 'Reach', items: [['social', 'Social'], ['connections', 'Connections']] },
 ];
 // Bottom bar on phones: the four things Marc does most, plus the full menu
-const TABS: [string, string][] = [['dashboard', 'Home'], ['posts', 'Posts'], ['ideas', 'Ideas'], ['ventures', 'Ventures']];
+const TABS: [string, string][] = [['dashboard', 'Home'], ['posts', 'Posts'], ['ideas', 'Ideas'], ['inbox', 'Inbox']];
 
 function Login({ onDone }: { onDone: () => void }) {
   const [pw, setPw] = useState('');
@@ -47,6 +48,7 @@ function Shell() {
     switch (section) {
       case 'posts': return id ? <PostEdit id={id} /> : <Posts />;
       case 'ideas': return <Ideas />;
+      case 'inbox': return <Inbox />;
       case 'pages': return id ? <PageEdit id={id} /> : <Pages />;
       case 'ventures': return <Ventures />;
       case 'knowledge': return <Knowledge />;

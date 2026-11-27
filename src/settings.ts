@@ -47,6 +47,14 @@ export interface SiteSettings {
     contactBody: string;
     sections: string[];  // order of home sections
   };
+  contact: {
+    title: string;
+    intro: string;
+    topics: string[];
+    success: string;
+    showEmail: boolean;
+    notes: string[];
+  };
   nav: NavItem[];
   social: SocialLink[];
   ai: {
@@ -92,7 +100,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     intro:
       'This is where my work lives. The companies I run, the ideas I keep coming back to, and the lessons I picked up the hard way. If you landed here, there is probably a reason. Have a look around.',
     primaryCta: { label: "See what I'm building", href: '#ventures' },
-    secondaryCta: { label: 'Get in touch', href: '#contact' },
+    secondaryCta: { label: 'Get in touch', href: '/contact' },
     now: ['Building across several ventures', 'Writing about business and technology', 'Based in Aotearoa New Zealand'],
     storyTitle: 'The short version',
     storyBody:
@@ -105,11 +113,20 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     contactBody: 'Partnerships, speaking, or just a good idea. My inbox is open.',
     sections: ['hero', 'now', 'ventures', 'story', 'writing', 'contact'],
   },
+  contact: {
+    title: "Let's talk.",
+    intro: 'Partnerships, speaking, investment, or a good idea you want to test. Send a note and I will get back to you personally.',
+    topics: ['Working together', 'Speaking or media', 'Investment', 'One of my businesses', 'Something else'],
+    success: 'Thanks. Your message is in, and I read every one myself.',
+    showEmail: true,
+    notes: ['I reply to most messages within two working days.', 'For customer support, the fastest route is through the business itself. Find them all on the Ventures page.'],
+  },
   nav: [
+    { label: 'Home', href: '/' },
+    { label: 'About', href: '/about' },
     { label: 'Ventures', href: '/ventures' },
     { label: 'Writing', href: '/writing' },
-    { label: 'About', href: '/about' },
-    { label: 'Contact', href: '/#contact' },
+    { label: 'Contact', href: '/contact' },
   ],
   social: [
     { network: 'LinkedIn', url: '' },
