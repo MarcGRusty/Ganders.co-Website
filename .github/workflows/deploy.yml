@@ -110,6 +110,9 @@ jobs:
       - name: Check the live site
         env:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           SUB=$(curl -s -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).result.subdomain))')
           URL="https://ganders-co.$SUB.workers.dev"
@@ -131,5 +134,9 @@ jobs:
           else
             echo "Resend: RESEND_API_KEY not set"
           fi
+          # Check each AI key works and the default model exists (no tokens used)
+          [ -n "$ANTHROPIC_API_KEY" ] && echo "AI Claude: $(curl -s -o /dev/null -w '%{http_code}' -H "x-api-key: $ANTHROPIC_API_KEY" -H 'anthropic-version: 2023-06-01' https://api.anthropic.com/v1/models/claude-sonnet-5-5)"
+          [ -n "$OPENAI_API_KEY" ] && echo "AI ChatGPT: $(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $OPENAI_API_KEY" https://api.openai.com/v1/models/gpt-5)"
+          [ -n "$GEMINI_API_KEY" ] && echo "AI Gemini: $(curl -s -o /dev/null -w '%{http_code}' -H "x-goog-api-key: $GEMINI_API_KEY" https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro)"
           npx wrangler r2 bucket list 2>/dev/null | grep -q ganders-co-media && echo "R2: bucket ganders-co-media ready" || echo "R2: no bucket"
           exit $FAIL
