@@ -80,5 +80,17 @@ jobs:
           npx wrangler secret bulk /tmp/secrets.json
           rm -f /tmp/secrets.json
 
-      - name: Live address
-        run: echo "Deployed. Open https://ganders-co.<your-subdomain>.workers.dev (shown in the Deploy step above)."
+      - name: Check the live site
+        run: |
+          SUB=$(curl -s -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).result.subdomain))')
+          URL="https://ganders-co.$SUB.workers.dev"
+          echo "Live at $URL"
+          sleep 5
+          FAIL=0
+          for p in / /about /contact /ventures /writing /admin/ /api/me /feed.xml; do
+            CODE=$(curl -s -o /dev/null -w '%{http_code}' "$URL$p")
+            echo "$CODE $p"
+            [ "$CODE" = 200 ] || FAIL=1
+          done
+          curl -s "$URL/api/me"; echo
+          exit $FAIL
