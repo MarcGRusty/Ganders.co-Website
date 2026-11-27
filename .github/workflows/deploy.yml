@@ -120,4 +120,8 @@ jobs:
             [ "$CODE" = 200 ] || FAIL=1
           done
           curl -s "$URL/api/me"; echo
+          for H in studio.ganders.co admin.ganders.co; do
+            CODE=$(curl -s -o /dev/null -w '%{http_code}' "https://$H/")
+            echo "$CODE https://$H/ (new custom domains can take a few minutes for the certificate)"
+          done
           exit $FAIL
