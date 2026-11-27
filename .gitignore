@@ -1,0 +1,6 @@
+node_modules
+.wrangler
+.dev.vars
+public/admin/app.js
+public/admin/app.js.map
+*.log

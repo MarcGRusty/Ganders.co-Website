@@ -1,0 +1,42 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ganders-co",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "ganders-co",
+      "database_id": "REPLACE_WITH_YOUR_D1_ID",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    { "binding": "MEDIA", "bucket_name": "ganders-co-media" }
+  ],
+  // Workers AI finds faces in uploaded photos so crops stay on them
+  "ai": { "binding": "AI" },
+  "vars": {
+    "SITE_URL": "https://ganders.co",
+    // Where /admin on the main site sends people. Studio also answers on admin.ganders.co.
+    "STUDIO_URL": "https://studio.ganders.co"
+  },
+  // Custom domains. Uncomment once ganders.co is on this Cloudflare account.
+  // "routes": [
+  //   { "pattern": "ganders.co", "custom_domain": true },
+  //   { "pattern": "www.ganders.co", "custom_domain": true },
+  //   { "pattern": "studio.ganders.co", "custom_domain": true },
+  //   { "pattern": "admin.ganders.co", "custom_domain": true }
+  // ],
+  "workers_dev": true,
+  "observability": { "enabled": true }
+  // Secrets (set with `npx wrangler secret put NAME`, never commit them):
+  // ADMIN_PASSWORD, SESSION_SECRET,
+  // ANTHROPIC_API_KEY, OPENAI_API_KEY, XAI_API_KEY, GEMINI_API_KEY, OPENROUTER_API_KEY,
+  // META_PAGE_ID, META_PAGE_TOKEN, META_IG_USER_ID
+}
