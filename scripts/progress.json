@@ -1,0 +1,22 @@
+{
+  "updated": "27 Nov 2026",
+  "done": [
+    "Plan and phases agreed",
+    "Visual direction and type system",
+    "Database design for pages, posts, ventures, media, knowledge base, ideas, modules, integrations",
+    "Public home page layout",
+    "Mobile first layout that scales up to tablet and desktop",
+    "Private GitHub repo connected"
+  ],
+  "doing": [
+    "Admin area with WYSIWYG editor (mobile friendly)",
+    "Multi AI provider layer with Auto mode",
+    "Knowledge base and Create Ideas"
+  ],
+  "next": [
+    "Logo and favicon upload or AI generation",
+    "Facebook and Instagram posting",
+    "External API connections and AI built modules",
+    "GitHub repo and live Cloudflare deploy"
+  ]
+}

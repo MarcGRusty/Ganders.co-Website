@@ -1,0 +1,36 @@
+{
+  "name": "ganders-co",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "build": "node scripts/build-admin.mjs",
+    "dev": "node scripts/build-admin.mjs && wrangler dev",
+    "db:migrate:local": "wrangler d1 migrations apply ganders-co --local",
+    "db:migrate": "wrangler d1 migrations apply ganders-co --remote",
+    "deploy": "node scripts/build-admin.mjs && wrangler deploy",
+    "typecheck": "tsc -p ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "hono": "^4.13.23"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261127.1",
+    "@tiptap/core": "^3.35.0",
+    "@tiptap/extension-image": "^3.35.0",
+    "@tiptap/extension-link": "^3.35.0",
+    "@tiptap/extension-placeholder": "^3.35.0",
+    "@tiptap/extension-text-align": "^3.35.0",
+    "@tiptap/extension-underline": "^3.35.0",
+    "@tiptap/pm": "^3.35.0",
+    "@tiptap/starter-kit": "^3.35.0",
+    "esbuild": "^0.28.2",
+    "preact": "^11.2.0",
+    "typescript": "^7.0.2",
+    "wrangler": "^4.168.0"
+  },
+  "private": true,
+  "type": "module"
+}

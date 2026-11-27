@@ -1,0 +1,109 @@
+import { Hono } from 'hono';
+import type { AppEnv } from './env';
+import { getSettings } from './settings';
+import { layout } from './views/layout';
+import { homeView, venturesView, writingView, postView, pageView, notFoundView, type Business, type PostRow, type PageRow } from './views/public';
+import { renderContent } from './modules';
+import { api } from './api';
+import { noEmDash, esc } from './util';
+
+const app = new Hono<AppEnv>();
+
+app.route('/api', api);
+
+// Media from R2
+app.get('/media/:key{.+}', async (c) => {
+  const obj = await c.env.MEDIA.get(c.req.param('key'));
+  if (!obj) return c.notFound();
+  const h = new Headers();
+  obj.writeHttpMetadata(h);
+  h.set('etag', obj.httpEtag);
+  h.set('cache-control', 'public, max-age=31536000, immutable');
+  if (h.get('content-type')?.includes('svg')) h.set('content-security-policy', "default-src 'none'; style-src 'unsafe-inline'");
+  return new Response(obj.body, { headers: h });
+});
+
+app.get('/admin', (c) => c.redirect('/admin/'));
+
+async function ventures(c: any): Promise<Business[]> {
+  return (await c.env.DB.prepare('SELECT * FROM businesses WHERE active = 1 ORDER BY sort, id').all()).results as Business[];
+}
+
+function html(c: any, body: string, status = 200) {
+  return c.html(noEmDash(body), status, { 'cache-control': 'public, max-age=0, s-maxage=60' });
+}
+
+app.get('/', async (c) => {
+  const s = await getSettings(c.env);
+  const [v, p] = await Promise.all([
+    ventures(c),
+    c.env.DB.prepare("SELECT id, slug, title, excerpt, cover, tags, published_at FROM posts WHERE status = 'published' ORDER BY published_at DESC LIMIT 4").all(),
+  ]);
+  const body = await renderContent(c.env, homeView(s, v, p.results as unknown as PostRow[]));
+  return html(c, layout(s, { path: '/', body, bodyClass: 'home' }, c.env.SITE_URL));
+});
+
+app.get('/ventures', async (c) => {
+  const s = await getSettings(c.env);
+  return html(c, layout(s, { path: '/ventures', title: s.home.venturesTitle, body: venturesView(s, await ventures(c)) }, c.env.SITE_URL));
+});
+
+app.get('/writing', async (c) => {
+  const s = await getSettings(c.env);
+  const tag = c.req.query('tag');
+  const q = tag
+    ? c.env.DB.prepare("SELECT * FROM posts WHERE status = 'published' AND (',' || REPLACE(tags, ', ', ',') || ',') LIKE ? ORDER BY published_at DESC").bind(`%,${tag},%`)
+    : c.env.DB.prepare("SELECT * FROM posts WHERE status = 'published' ORDER BY published_at DESC");
+  const posts = (await q.all()).results as unknown as PostRow[];
+  return html(c, layout(s, { path: '/writing', title: s.home.writingTitle, body: writingView(s, posts, tag) }, c.env.SITE_URL));
+});
+
+app.get('/writing/:slug', async (c) => {
+  const s = await getSettings(c.env);
+  const p = await c.env.DB.prepare("SELECT * FROM posts WHERE slug = ? AND status = 'published'").bind(c.req.param('slug')).first<PostRow>();
+  if (!p) return notFound(c);
+  const body = postView(p, await renderContent(c.env, p.content_html));
+  return html(c, layout(s, { path: `/writing/${p.slug}`, title: p.title, description: p.excerpt, image: p.cover, body }, c.env.SITE_URL));
+});
+
+app.get('/feed.xml', async (c) => {
+  const s = await getSettings(c.env);
+  const posts = (await c.env.DB.prepare("SELECT * FROM posts WHERE status = 'published' ORDER BY published_at DESC LIMIT 30").all()).results as unknown as PostRow[];
+  const base = c.env.SITE_URL;
+  const items = posts.map((p) => `<item><title>${esc(p.title)}</title><link>${base}/writing/${p.slug}</link><guid>${base}/writing/${p.slug}</guid><pubDate>${new Date(p.published_at).toUTCString()}</pubDate><description>${esc(p.excerpt)}</description></item>`).join('');
+  return c.body(`<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>${esc(s.site.name)}</title><link>${base}</link><description>${esc(s.seo.description)}</description>${items}</channel></rss>`, 200, { 'content-type': 'application/rss+xml; charset=utf-8' });
+});
+
+app.get('/sitemap.xml', async (c) => {
+  const base = c.env.SITE_URL;
+  const [pages, posts] = await Promise.all([
+    c.env.DB.prepare("SELECT slug, updated_at FROM pages WHERE status = 'published'").all<{ slug: string; updated_at: string }>(),
+    c.env.DB.prepare("SELECT slug, updated_at FROM posts WHERE status = 'published'").all<{ slug: string; updated_at: string }>(),
+  ]);
+  const urls = ['/', '/ventures', '/writing', ...pages.results.map((p) => `/${p.slug}`), ...posts.results.map((p) => `/writing/${p.slug}`)];
+  return c.body(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.map((u) => `<url><loc>${base}${u}</loc></url>`).join('')}</urlset>`, 200, { 'content-type': 'application/xml' });
+});
+
+// CMS pages at /:slug (and nested slugs like /work/speaking)
+app.get('/:slug{[a-z0-9][a-z0-9/-]*}', async (c) => {
+  const s = await getSettings(c.env);
+  const slug = c.req.param('slug').replace(/\/$/, '');
+  const p = await c.env.DB.prepare("SELECT * FROM pages WHERE slug = ? AND status = 'published'").bind(slug).first<PageRow & { seo_title: string; seo_description: string }>();
+  if (!p) return notFound(c);
+  const body = pageView(p, await renderContent(c.env, p.content_html));
+  return html(c, layout(s, { path: `/${slug}`, title: p.seo_title || p.title, description: p.seo_description || p.summary, body }, c.env.SITE_URL));
+});
+
+async function notFound(c: any) {
+  const s = await getSettings(c.env);
+  return html(c, layout(s, { path: c.req.path, title: 'Not found', body: notFoundView() }, c.env.SITE_URL), 404);
+}
+app.notFound(notFound);
+
+app.onError((err, c) => {
+  console.error(err);
+  if (c.req.path.startsWith('/api/')) return c.json({ error: err.message || 'Something went wrong' }, 500);
+  return c.text('Something went wrong. Please try again shortly.', 500);
+});
+
+export default app;

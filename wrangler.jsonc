@@ -1,0 +1,30 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ganders-co",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "ganders-co",
+      "database_id": "REPLACE_WITH_YOUR_D1_ID",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    { "binding": "MEDIA", "bucket_name": "ganders-co-media" }
+  ],
+  "vars": {
+    "SITE_URL": "https://ganders.co"
+  },
+  "observability": { "enabled": true }
+  // Secrets (set with `npx wrangler secret put NAME`, never commit them):
+  // ADMIN_PASSWORD, SESSION_SECRET,
+  // ANTHROPIC_API_KEY, OPENAI_API_KEY, XAI_API_KEY, GEMINI_API_KEY, OPENROUTER_API_KEY,
+  // META_PAGE_ID, META_PAGE_TOKEN, META_IG_USER_ID
+}
