@@ -2,7 +2,7 @@ import { h } from 'preact';
 import { useState } from 'preact/hooks';
 import { api, adm, mediaUrl, upload } from '../api';
 import { ThemesTab, FONTS as THEME_FONTS } from './themes';
-import { Area, Btn, Card, ColorField, ConfirmBtn, Empty, Field, Head, ImageField, ProviderPicker, Select, Sheet, Spinner, Toggle, toast, useLoad } from '../ui';
+import { Area, Btn, Card, ColorField, ConfirmBtn, Empty, Field, Head, ImageField, ProviderPicker, Select, Sheet, Spinner, Toggle, toast, useLoad, Pending } from '../ui';
 
 /* ---------- Ventures ---------- */
 const blankBiz = { name: '', url: '', tagline: '', description: '', role: 'Founder', since: '', logo: '', accent: '', active: 1 };
@@ -81,10 +81,10 @@ const _FONTS_UNUSED = ['Bricolage Grotesque', 'Schibsted Grotesk', 'Syne', 'Unbo
 const SECTION_LABELS: Record<string, string> = { hero: 'Intro', now: 'Now strip', ventures: 'Ventures', story: 'Story', writing: 'Writing', contact: 'Contact' };
 
 export function Design() {
-  const { data, setData } = useLoad<any>(() => api('/admin/settings'));
+  const { data, setData, error, reload } = useLoad<any>(() => api('/admin/settings'));
   const [tab, setTab] = useState('identity');
   const [busy, setBusy] = useState(false);
-  if (!data) return <Spinner />;
+  if (!data) return <Pending error={error} retry={reload} />;
   const s = data.settings;
   const upd = (group: string, key: string) => (v: any) => setData({ ...data, settings: { ...s, [group]: { ...s[group], [key]: v } } });
   const setGroup = (group: string, v: any) => setData({ ...data, settings: { ...s, [group]: v } });

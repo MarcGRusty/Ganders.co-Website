@@ -56,6 +56,17 @@ export function Empty({ title, children }: { title: string; children?: Component
 }
 export function Spinner() { return <div class="spin" aria-label="Loading" />; }
 
+/** Spinner while loading, or a clear message with a retry when the request fails. */
+export function Pending({ error, retry }: { error?: string; retry?: () => unknown }) {
+  if (!error) return <Spinner />;
+  return (
+    <div class="card" role="alert">
+      <p><strong>This section did not load.</strong> {error}</p>
+      {retry && <Btn kind="ghost" onClick={() => retry()}>Try again</Btn>}
+    </div>
+  );
+}
+
 export function Btn({ children, onClick, kind = 'primary', busy, disabled, type = 'button', small, title }: { children: ComponentChildren; onClick?: (e: Event) => any; kind?: 'primary' | 'ghost' | 'danger' | 'accent' | 'plain'; busy?: boolean; disabled?: boolean; type?: 'button' | 'submit'; small?: boolean; title?: string }) {
   return (
     <button type={type} title={title} class={`btn ${kind}${small ? ' small' : ''}${busy ? ' busy' : ''}`} disabled={disabled || busy} onClick={onClick}>

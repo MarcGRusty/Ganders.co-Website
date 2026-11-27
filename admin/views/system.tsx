@@ -1,7 +1,7 @@
 import { h } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { api, adm } from '../api';
-import { Area, Btn, Card, ConfirmBtn, Empty, Field, Head, ProviderPicker, Select, Sheet, Spinner, Toggle, fmt, toast, useLoad, useProviders } from '../ui';
+import { Area, Btn, Card, ConfirmBtn, Empty, Field, Head, ProviderPicker, Select, Sheet, Spinner, Toggle, fmt, toast, useLoad, useProviders, Pending } from '../ui';
 
 /* ---------- Knowledge base ---------- */
 const KINDS: [string, string][] = [['story', 'My story'], ['belief', 'Beliefs and opinions'], ['business', 'Business details'], ['voice', 'How I sound'], ['audience', 'Who I talk to'], ['note', 'Notes and facts']];
@@ -61,10 +61,10 @@ function KbSheet({ entry, onClose, onSaved }: { entry: any; onClose: () => void;
 
 /* ---------- AI settings ---------- */
 export function AiSettings() {
-  const { data, setData } = useLoad<any>(() => api('/admin/settings'));
+  const { data, setData, error, reload } = useLoad<any>(() => api('/admin/settings'));
   const providers = useProviders();
   const [busy, setBusy] = useState(false);
-  if (!data) return <Spinner />;
+  if (!data) return <Pending error={error} retry={reload} />;
   const ai = data.settings.ai;
   const upd = (k: string) => (v: any) => setData({ ...data, settings: { ...data.settings, ai: { ...ai, [k]: v } } });
   async function save() {

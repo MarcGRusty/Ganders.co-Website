@@ -1,14 +1,14 @@
 import { h } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { api, adm } from '../api';
-import { Btn, Card, ConfirmBtn, Empty, Field, Area, Head, ImageField, Pill, ProviderPicker, Select, Sheet, Spinner, fmt, toast, useLoad } from '../ui';
+import { Btn, Card, ConfirmBtn, Empty, Field, Area, Head, ImageField, Pill, ProviderPicker, Select, Sheet, Spinner, fmt, toast, useLoad, Pending } from '../ui';
 import { RichEditor } from '../editor';
 import { go } from '../router';
 
 /* ---------- Dashboard ---------- */
 export function Dashboard() {
-  const { data } = useLoad<any>(() => api('/admin/overview'));
-  if (!data) return <Spinner />;
+  const { data, error, reload } = useLoad<any>(() => api('/admin/overview'));
+  if (!data) return <Pending error={error} retry={reload} />;
   const c = data.counts;
   const noAi = !data.ai.some((p: any) => p.connected);
   return (
